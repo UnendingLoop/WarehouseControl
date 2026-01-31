@@ -1,11 +1,9 @@
 package service
 
 import (
-	"regexp"
 	"strings"
-	"time"
 
-	"github.com/UnendingLoop/EventBooker/internal/model"
+	"github.com/UnendingLoop/WarehouseControl/internal/model"
 	"golang.org/x/crypto/bcrypt"
 )
 
@@ -16,10 +14,6 @@ func validateNormalizeUser(u *model.User) error {
 	}
 	u.UserName = strings.TrimSpace(u.UserName)
 	u.UserName = strings.ToLower(u.UserName)
-	matchEmail := regexp.MustCompile(`^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$`)
-	if !matchEmail.MatchString(u.UserName) {
-		return model.ErrIncorrectEmail
-	}
 
 	// Генерация хэша из пароля
 	passHash, _ := bcrypt.GenerateFromPassword([]byte(u.PassHash), bcrypt.DefaultCost)
@@ -28,17 +22,58 @@ func validateNormalizeUser(u *model.User) error {
 	return nil
 }
 
-func validateNormalizeItem(event *model.Item) error {
-	if event.Title == "" || event.TotalSeats <= 0 || event.BookWindow <= 0 {
-		return model.ErrEmptyEventInfo
+func validateItem(item *model.Item) error {
+	if item.Title == "" {
+		return model.ErrEmptyTitle
 	}
-	if event.EventDate.UTC().Before(time.Now().UTC()) {
-		return model.ErrIncorrectEventTime
+	if item.Price < 0 {
+		return model.ErrInvalidPrice
 	}
-	now := time.Now().UTC()
-	event.Created = &now
-	event.AvailSeats = event.TotalSeats
-	event.Status = model.EventStatusActual
+	if item.AvailableAmount < 0 {
+		return model.ErrInvalidAvail
+	}
+	return nil
+}
+
+func validateItemUpdate(item *model.ItemUpdate) error {
+	if item.Title != nil && *item.Title == "" {
+		return model.ErrEmptyTitle
+	}
+	if item.Price != nil && *item.Price < 0 {
+		return model.ErrInvalidPrice
+	}
+	if item.AvailableAmount != nil && *item.AvailableAmount < 0 {
+		return model.ErrInvalidAvail
+	}
+	return nil
+}
+
+func validateReqParams(rp *model.RequestParam) error {
+	if rp.OrderBy != nil {
+		// валидация самого OrderBy
+		if _, ok := model.OrderByItemsMap[*rp.OrderBy]; !ok {
+			return model.ErrInvalidOrderBy
+		}
+		// валидация asc/desc
+		if rp.ASC == rp.DESC {
+			return model.ErrInvalidAscDesc
+		}
+	}
+
+	if rp.StartTime != nil && rp.EndTime != nil {
+		if rp.StartTime.After(*rp.EndTime) {
+			return model.ErrInvalidStartEndTime
+		}
+	}
+
+	if rp.Page != nil {
+		if *rp.Page <= 0 {
+			return model.ErrInvalidPage
+		}
+		if *rp.Limit <= 0 || *rp.Limit >= 1000 {
+			return model.ErrInvalidLimit
+		}
+	}
 
 	return nil
 }

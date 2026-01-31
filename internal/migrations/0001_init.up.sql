@@ -39,6 +39,8 @@ CREATE TABLE items_history (
 
 CREATE INDEX idx_items_history_item_id ON items_history (item_id);
 
+CREATE INDEX idx_users_username ON users (username);
+
 CREATE INDEX idx_items_history_changed_at ON items_history (changed_at);
 
 CREATE INDEX idx_items_history_changed_by ON items_history (changed_by);

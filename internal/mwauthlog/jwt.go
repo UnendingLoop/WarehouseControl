@@ -3,7 +3,7 @@ package mwauthlog
 import (
 	"time"
 
-	"github.com/UnendingLoop/EventBooker/internal/model"
+	"github.com/UnendingLoop/WarehouseControl/internal/model"
 	"github.com/golang-jwt/jwt/v5"
 )
 
@@ -17,11 +17,11 @@ func NewJWTManager(secret []byte, ttl time.Duration, issuer string) *JWTManager 
 	return &JWTManager{secret: secret, ttl: ttl, issuer: issuer}
 }
 
-func (j *JWTManager) Generate(uid int, email string, role string) (string, error) {
+func (j *JWTManager) Generate(uid int, userName string, role string) (string, error) {
 	claims := Claims{
-		UserID: uid,
-		Email:  email,
-		Role:   role,
+		UserID:   uid,
+		Username: userName,
+		Role:     role,
 		RegisteredClaims: jwt.RegisteredClaims{
 			ExpiresAt: jwt.NewNumericDate(time.Now().Add(j.ttl)),
 			IssuedAt:  jwt.NewNumericDate(time.Now()),

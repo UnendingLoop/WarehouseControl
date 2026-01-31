@@ -4,37 +4,35 @@ import "errors"
 
 var (
 	// 404
-	ErrUserNotFound  = errors.New("requested user id not found")
-	ErrBookNotFound  = errors.New("requested booking id not found")
-	ErrEventNotFound = errors.New("requested event id not found")
+	ErrUserNotFound = errors.New("requested user id not found")
+	ErrItemNotFound = errors.New("requested item id not found")
 
 	// 400
 	ErrInvalidToken       = errors.New("invalid auth-token provided")
 	ErrInvalidCredentials = errors.New("email or password is incorrect")
 
-	ErrIncorrectEmail     = errors.New("incorrect email provided")
-	ErrIncorrectPhone     = errors.New("incorrect telephone number provided")
-	ErrIncorrectEventID   = errors.New("incorrect event id provided")
-	ErrIncorrectBookID    = errors.New("incorrect booking id provided")
-	ErrIncorrectUserID    = errors.New("incorrect user id provided")
-	ErrIncorrectUserRole  = errors.New("incorrect user role is provided")
-	ErrIncorrectEventTime = errors.New("event date cannot be in the past")
-	ErrEmptyEventInfo     = errors.New("incomplete data provided to create event")
-	ErrEmptyBookInfo      = errors.New("incomplete data provided to book event")
-	ErrEmptyEmail         = errors.New("empty email provided")
+	ErrInvalidOrderBy      = errors.New("invalid ordering parameter specified")
+	ErrInvalidAscDesc      = errors.New("invalid ASC/DESC provided")
+	ErrInvalidStartEndTime = errors.New("invalid start/end time provided: start cannot be later than end")
+	ErrInvalidPage         = errors.New("invalid page value provided: value must be > 0")
+	ErrInvalidLimit        = errors.New("invalid limit value provided: value must be > 0 and < 1000")
+
+	ErrIncorrectItemID   = errors.New("incorrect item id provided")
+	ErrIncorrectUserName = errors.New("incorrect username provided")
+	ErrIncorrectUserRole = errors.New("incorrect user role is provided")
+	ErrEmptyItemInfo     = errors.New("incomplete data provided to create item")
+	ErrEmptyTitle        = errors.New("invalid item title provided")
+	ErrInvalidPrice      = errors.New("invalid item price provided")
+	ErrInvalidAvail      = errors.New("invalid item available amount provided")
+	ErrNoFieldsToUpdate  = errors.New("nothing to update in item")
 
 	// 403
-	ErrAccessDenied = errors.New("you don't have enough permissions to complete this operation")
+	ErrAccessDenied = errors.New("lack permissions to complete operation")
 
 	// 500
 	ErrCommon500 = errors.New("something went wrong. Try again later")
 
 	// 409
-	ErrBookIsConfirmed   = errors.New("requested booking is already confirmed")
-	ErrNoSeatsAvailable  = errors.New("no more seats to book for this event")
-	ErrExpiredEvent      = errors.New("the event you are trying to book has expired")
-	ErrExpiredBook       = errors.New("requested booking confirmation deadline has expired")
-	ErrBookIsCancelled   = errors.New("requested booking is already cancelled")
 	ErrEventBusy         = errors.New("requested event not available for deletion. Remove confirmed bookings first")
 	ErrUserAlreadyExists = errors.New("user with such email already exists")
 )

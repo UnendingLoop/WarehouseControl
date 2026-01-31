@@ -8,8 +8,8 @@ import (
 	"path/filepath"
 	"time"
 
-	"github.com/UnendingLoop/EventBooker/internal/model"
-	"github.com/UnendingLoop/EventBooker/internal/repository/ebpostgres"
+	"github.com/UnendingLoop/WarehouseControl/internal/model"
+	"github.com/UnendingLoop/WarehouseControl/internal/repository/whcpostgres"
 	"github.com/golang-migrate/migrate/v4"
 	"github.com/golang-migrate/migrate/v4/database/postgres"
 	_ "github.com/golang-migrate/migrate/v4/source/file"
@@ -17,30 +17,21 @@ import (
 	"github.com/wb-go/wbf/dbpg"
 )
 
-type EBRepo interface {
-	CreateEvent(ctx context.Context, exec ebpostgres.Executor, newEvent *model.Event) error // только для админа
-	CreateBook(ctx context.Context, exec ebpostgres.Executor, newBook *model.Book) error
-	CreateUser(ctx context.Context, exec ebpostgres.Executor, newUser *model.User) error
+type WHCRepo interface {
+	CreateUser(ctx context.Context, newUser *model.User) error
+	GetUserByName(ctx context.Context, user string) (*model.User, error)
 
-	DeleteEvent(ctx context.Context, exec ebpostgres.Executor, eventID int) error // только для админа
-	DeleteBook(ctx context.Context, exec ebpostgres.Executor, bookID int) error   // эксклюзивно для воркера BookCleaner
+	CreateItem(ctx context.Context, newItem *model.Item) error
+	DeleteItem(ctx context.Context, itemID int) error
+	UpdateItem(ctx context.Context, uItem *model.ItemUpdate, showDeleted bool) error
 
-	UpdateBookStatus(ctx context.Context, exec ebpostgres.Executor, bookID int, newStatus string) error
-
-	GetEventByID(ctx context.Context, exec ebpostgres.Executor, eventID int) (*model.Event, error)
-	GetEventsList(ctx context.Context, exec ebpostgres.Executor, role string) ([]*model.Event, error)
-	GetBookByID(ctx context.Context, exec ebpostgres.Executor, bookID int) (*model.Book, error)
-	GetBooksListByUser(ctx context.Context, exec ebpostgres.Executor, id int) ([]*model.Book, error)
-	GetExpiredBooksList(ctx context.Context, exec ebpostgres.Executor) ([]*model.Book, error)
-	GetUserByID(ctx context.Context, exec ebpostgres.Executor, userID int) (*model.User, error)
-	GetUserByEmail(ctx context.Context, exec ebpostgres.Executor, email string) (*model.User, error)
-
-	IncrementAvailSeatsByEventID(ctx context.Context, exec ebpostgres.Executor, eventID int) error
-	DecrementAvailSeatsByEventID(ctx context.Context, exec ebpostgres.Executor, eventID int) error
+	GetItemByID(ctx context.Context, itemID int, showDeleted bool) (*model.Item, error)
+	GetItemsList(ctx context.Context, rpi *model.RequestParam, showDeleted bool) ([]*model.Item, error)
+	GetItemHistoryByID(ctx context.Context, rph *model.RequestParam, itemID int) ([]*model.ItemHistory, error)
 }
 
-func NewPostgresImageRepo(dbconn *dbpg.DB) EBRepo {
-	return &ebpostgres.PostgresRepo{}
+func NewPostgresImageRepo(dbconn *dbpg.DB) WHCRepo {
+	return &whcpostgres.PostgresRepo{DB: dbconn}
 }
 
 func ConnectWithRetries(appConfig *config.Config, retryCount int, idleTime time.Duration) *dbpg.DB {

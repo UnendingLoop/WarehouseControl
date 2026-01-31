@@ -13,22 +13,24 @@ import (
 
 type (
 	Claims struct {
-		UserID int    `json:"uid"`
-		Email  string `json:"email"`
-		Role   string `json:"role"`
+		UserID   int    `json:"uid"`
+		Username string `json:"username"`
+		Role     string `json:"role"`
 		jwt.RegisteredClaims
 	}
 )
+
+var ReqID = "request_id"
 
 func RequestID() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		rid := uuid.New().String()
 
-		ctx := context.WithValue(c.Request.Context(), "request_id", rid)
+		ctx := context.WithValue(c.Request.Context(), ReqID, rid)
 		c.Request = c.Request.WithContext(ctx)
 
 		c.Header("X-Request-ID", rid)
-		c.Set("request_id", rid)
+		c.Set(ReqID, rid)
 
 		c.Next()
 	}
@@ -75,7 +77,7 @@ func RequireAuth(secret []byte) gin.HandlerFunc {
 		// прокидываем дальше
 		c.Set("user_id", claims.UserID)
 		c.Set("role", claims.Role)
-		c.Set("email", claims.Email)
+		c.Set("username", claims.Username)
 
 		c.Next()
 	}

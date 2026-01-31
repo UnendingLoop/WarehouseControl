@@ -10,7 +10,7 @@ import (
 //================ Пользователь и роли ========================
 
 type User struct {
-	ID        int       `json:"id" db:"id"`
+	ID        int       `json:"id,omitempty" db:"id"`
 	UserName  string    `json:"username" db:"username"`
 	Role      string    `json:"role" db:"role"`
 	PassHash  string    `json:"-" db:"pass_hash"`
@@ -21,6 +21,7 @@ const (
 	RoleAdmin   = "admin"
 	RoleManager = "manager"
 	RoleViewer  = "viewer"
+	RoleAuditor = "auditor"
 )
 
 var RolesMap = map[string]struct{}{RoleAdmin: {}, RoleManager: {}, RoleViewer: {}}
@@ -36,17 +37,17 @@ type Item struct {
 	AvailableAmount int        `json:"available_amount" db:"available_amount"`
 	CreatedAt       time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt       time.Time  `json:"updated_at" db:"updated_at"`
+	UpdatedBy       string     `json:"-" db:"updated_by"`
 	DeletedAt       *time.Time `json:"deleted_at,omitempty" db:"deleted_at"`
 }
-
-type RequestParamItems struct {
-	OrderBy   *string    `form:"order_by"`
-	ASC       bool       `form:"asc"`
-	DESC      bool       `form:"desc"`
-	StartTime *time.Time `form:"from"`
-	EndTime   *time.Time `form:"to"`
-	Page      *int       `form:"page"`
-	Limit     *int       `form:"limit"`
+type ItemUpdate struct {
+	ID              int     `json:"id" db:"id"`
+	Title           *string `json:"title" db:"title"`
+	Description     *string `json:"description,omitempty" db:"description"`
+	Price           *int64  `json:"price" db:"price"`
+	Visible         *bool   `json:"visible" db:"visible"`
+	AvailableAmount *int    `json:"available_amount" db:"available_amount"`
+	UpdatedBy       string  `json:"-" db:"updated_by"`
 }
 
 const (
@@ -78,7 +79,7 @@ type ItemHistory struct {
 	NewData   json.RawMessage `json:"new" db:"new_data"`
 }
 
-type RequestParamHistory struct {
+type RequestParam struct {
 	OrderBy   *string    `form:"order_by"`
 	ASC       bool       `form:"asc"`
 	DESC      bool       `form:"desc"`

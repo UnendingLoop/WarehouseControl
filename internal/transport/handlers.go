@@ -1,22 +1,24 @@
 package transport
 
 import (
+	"context"
 	"encoding/csv"
+	"errors"
 	"log"
 	"net/http"
 	"strconv"
 
-	"github.com/UnendingLoop/EventBooker/internal/model"
+	"github.com/UnendingLoop/WarehouseControl/internal/model"
 	"github.com/gin-gonic/gin"
 	"github.com/wb-go/wbf/ginext"
 )
 
-func (eh *WHCHandlers) SimplePinger(ctx *ginext.Context) {
+func (whc *WHCHandlers) SimplePinger(ctx *ginext.Context) {
 	rid := stringFromCtx(ctx, "request_id")
 	ctx.JSON(200, gin.H{rid: "pong"})
 }
 
-func (eh *WHCHandlers) SignUpUser(ctx *gin.Context) {
+func (whc *WHCHandlers) SignUpUser(ctx *gin.Context) {
 	var newUser model.User
 
 	if err := ctx.ShouldBindJSON(&newUser); err != nil {
@@ -24,7 +26,7 @@ func (eh *WHCHandlers) SignUpUser(ctx *gin.Context) {
 		return
 	}
 
-	token, err := eh.svc.CreateUser(ctx.Request.Context(), &newUser)
+	token, err := whc.svc.CreateUser(ctx.Request.Context(), &newUser)
 	if err != nil {
 		ctx.JSON(errorCodeDefiner(err), gin.H{"error": err.Error()})
 		return
@@ -44,7 +46,7 @@ func (eh *WHCHandlers) SignUpUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusCreated, resp)
 }
 
-func (eh *WHCHandlers) LoginUser(ctx *gin.Context) {
+func (whc *WHCHandlers) LoginUser(ctx *gin.Context) {
 	var req authRequest
 
 	if err := ctx.ShouldBindJSON(&req); err != nil {
@@ -52,7 +54,11 @@ func (eh *WHCHandlers) LoginUser(ctx *gin.Context) {
 		return
 	}
 
-	token, user, err := eh.svc.LoginUser(ctx.Request.Context(), req.UserName, req.Password)
+	if _, ok := model.RolesMap[req.Role]; !ok {
+		ctx.JSON(400, gin.H{"error": model.ErrIncorrectUserRole})
+	}
+
+	token, user, err := whc.svc.LoginUser(ctx.Request.Context(), req.UserName, req.Password, req.Role)
 	if err != nil {
 		ctx.JSON(errorCodeDefiner(err), gin.H{"error": err.Error()})
 		return
@@ -72,28 +78,24 @@ func (eh *WHCHandlers) LoginUser(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, resp)
 }
 
-func (eh *WHCHandlers) CreateItem(ctx *gin.Context) {
+func (whc *WHCHandlers) CreateItem(ctx *gin.Context) {
 	// логируем role-sensitive запрос
 	rid := stringFromCtx(ctx, "request_id")
 	uid := intFromCtx(ctx, "user_id")
-	mail := stringFromCtx(ctx, "email")
+	userName := stringFromCtx(ctx, "username")
 	role := stringFromCtx(ctx, "role")
+	log.Printf("rid=%q userID=%d userName=%q role=%q creating event", rid, uid, userName, role)
 
-	log.Printf("rid=%q userID=%d userEmail=%q role=%q creating event", rid, uid, mail, role)
-
-	// дальше обычная логика
-	if role != "admin" {
-		ctx.JSON(http.StatusForbidden, gin.H{"error": "forbidden"})
-		return
-	}
-
+	// читаем данные нового товара
 	var item model.Item
+	item.UpdatedBy = userName
 	if err := ctx.ShouldBindJSON(&item); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid item payload"})
 		return
 	}
 
-	if err := eh.svc.CreateItem(ctx.Request.Context(), &item, role); err != nil {
+	// передаем в ервис
+	if err := whc.svc.CreateItem(ctx.Request.Context(), &item, role); err != nil {
 		ctx.JSON(errorCodeDefiner(err), gin.H{"error": err.Error()})
 		return
 	}
@@ -101,9 +103,9 @@ func (eh *WHCHandlers) CreateItem(ctx *gin.Context) {
 	ctx.Status(http.StatusCreated)
 }
 
-func (eh *WHCHandlers) GetItemByID(ctx *gin.Context) {
+func (whc *WHCHandlers) GetItemByID(ctx *gin.Context) {
+	// определяем id и роль
 	role := stringFromCtx(ctx, "role")
-
 	rawID, ok := ctx.Params.Get("id")
 	if !ok {
 		ctx.JSON(400, gin.H{"error": "empty event id"})
@@ -111,7 +113,8 @@ func (eh *WHCHandlers) GetItemByID(ctx *gin.Context) {
 	}
 	id := stringToInt(rawID)
 
-	res, err := eh.svc.GetItemByID(ctx.Request.Context(), id, role)
+	// передаем в сервис
+	res, err := whc.svc.GetItemByID(ctx.Request.Context(), id, role)
 	if err != nil {
 		ctx.JSON(errorCodeDefiner(err), gin.H{"error": err.Error()})
 		return
@@ -120,31 +123,32 @@ func (eh *WHCHandlers) GetItemByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (eh *WHCHandlers) UpdateItem(ctx *gin.Context) {
+func (whc *WHCHandlers) UpdateItem(ctx *gin.Context) {
 	// логируем role-sensitive запрос
 	rid := stringFromCtx(ctx, "request_id")
 	uid := intFromCtx(ctx, "user_id")
-	mail := stringFromCtx(ctx, "email")
+	userName := stringFromCtx(ctx, "username")
 	role := stringFromCtx(ctx, "role")
+	log.Printf("rid=%q userID=%d userName=%q role=%q creating event", rid, uid, userName, role)
 
-	log.Printf("rid=%q userID=%d userEmail=%q role=%q creating event", rid, uid, mail, role)
-
-	// дальше обычная логика
+	// определяем id
 	rawID, ok := ctx.Params.Get("id")
 	if !ok {
 		ctx.JSON(400, gin.H{"error": "empty event id"})
 		return
 	}
-
 	id := stringToInt(rawID)
 
-	var item model.Item
+	// читаем обновленные данные товара
+	var item model.ItemUpdate
 	if err := ctx.ShouldBindJSON(&item); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid item payload"})
 		return
 	}
+	item.UpdatedBy = userName
 
-	if err := eh.svc.UpdateItemByID(ctx.Request.Context(), id, &item, role); err != nil {
+	// передаем в сервис
+	if err := whc.svc.UpdateItemByID(ctx.Request.Context(), id, &item, role); err != nil {
 		ctx.JSON(errorCodeDefiner(err), gin.H{"error": err.Error()})
 		return
 	}
@@ -152,7 +156,7 @@ func (eh *WHCHandlers) UpdateItem(ctx *gin.Context) {
 	ctx.Status(http.StatusCreated)
 }
 
-func (eh *WHCHandlers) DeleteItem(ctx *gin.Context) {
+func (whc *WHCHandlers) DeleteItem(ctx *gin.Context) {
 	// логируем role-sensitive запрос
 	rid := stringFromCtx(ctx, "request_id")
 	uid := intFromCtx(ctx, "user_id")
@@ -161,15 +165,16 @@ func (eh *WHCHandlers) DeleteItem(ctx *gin.Context) {
 
 	log.Printf("rid=%q userID=%d userName=%q role=%q deleting event", rid, uid, username, role)
 
-	// обычный флоу
+	// определяем id
 	rawID, ok := ctx.Params.Get("id")
 	if !ok {
 		ctx.JSON(400, gin.H{"error": "empty item id"})
 		return
 	}
-
 	id := stringToInt(rawID)
-	err := eh.svc.DeleteItemByID(ctx.Request.Context(), id, role)
+
+	// передаем в сервис
+	err := whc.svc.DeleteItemByID(ctx.Request.Context(), id, role, username)
 	if err != nil {
 		ctx.JSON(errorCodeDefiner(err), gin.H{"error": err.Error()})
 		return
@@ -178,16 +183,16 @@ func (eh *WHCHandlers) DeleteItem(ctx *gin.Context) {
 	ctx.JSON(http.StatusNoContent, nil)
 }
 
-func (eh *WHCHandlers) GetItemsList(ctx *gin.Context) {
+func (whc *WHCHandlers) GetItemsList(ctx *gin.Context) {
 	// парсим параметры запроса из URL
-	rpa := model.RequestParamItems{}
-	if err := decodeQueryParams(ctx, &rpa); err != nil {
+	rpi := model.RequestParam{}
+	if err := decodeQueryParams(ctx, &rpi); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
 	role := stringFromCtx(ctx, "role")
-	res, err := eh.svc.GetItemsList(ctx.Request.Context(), role)
+	res, err := whc.svc.GetItemsList(ctx.Request.Context(), &rpi, role)
 	if err != nil {
 		ctx.JSON(errorCodeDefiner(err), gin.H{"error": err.Error()})
 		return
@@ -196,16 +201,25 @@ func (eh *WHCHandlers) GetItemsList(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (eh *WHCHandlers) GetItemHistoryByID(ctx *gin.Context) {
+func (whc *WHCHandlers) GetItemHistoryByID(ctx *gin.Context) {
+	// парсим параметры запроса из URL
+	rph := model.RequestParam{}
+	if err := decodeQueryParams(ctx, &rph); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// определяем id и роль
 	role := stringFromCtx(ctx, "role")
 	rawID, ok := ctx.Params.Get("id")
 	if !ok {
-		ctx.JSON(400, gin.H{"error": "empty event id"})
+		ctx.JSON(400, gin.H{"error": "empty item id"})
 		return
 	}
 	id := stringToInt(rawID)
 
-	res, err := eh.svc.GetItemHistoryByID(ctx.Request.Context(), id, role)
+	// обращаемся к сервису
+	res, err := whc.svc.GetItemHistoryByID(ctx.Request.Context(), &rph, id, role)
 	if err != nil {
 		ctx.JSON(errorCodeDefiner(err), gin.H{"error": err.Error()})
 		return
@@ -214,52 +228,41 @@ func (eh *WHCHandlers) GetItemHistoryByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (eh *WHCHandlers) GetItemsListAsCSV(ctx *gin.Context) {
-	role := stringFromCtx(ctx, "role")
-	res, err := eh.svc.GetItemsList(ctx.Request.Context(), role)
-	if err != nil {
-		ctx.JSON(errorCodeDefiner(err), gin.H{"error": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, res)
-}
-
-func (eh *WHCHandlers) GetHistoryListAsCSV(ctx *gin.Context) {
-	role := stringFromCtx(ctx, "role")
-	res, err := eh.svc.GetItemsList(ctx.Request.Context(), role)
-	if err != nil {
-		ctx.JSON(errorCodeDefiner(err), gin.H{"error": err.Error()})
-		return
-	}
-
-	ctx.JSON(http.StatusOK, res)
-}
-
-func (h *OperationHandler) ExportOperationsCSV(ctx *ginext.Context) {
-	// парсим параметры запроса операций из URL
-	rpo := model.RequestParamOperations{}
-	if err := decodeQueryParams(ctx, &rpo); err != nil {
+func (whc *WHCHandlers) ExportItemsCSV(ctx *ginext.Context) {
+	// парсим параметры запроса из URL
+	rpi := model.RequestParam{}
+	if err := decodeQueryParams(ctx, &rpi); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	// определяем роль
+	role := stringFromCtx(ctx, "role")
 
 	// получаем массив строк
-	res, err := h.svc.GetAllOperations(ctx.Request.Context(), &rpo)
+	res, err := whc.svc.GetItemsList(ctx.Request.Context(), &rpi, role)
 	if err != nil {
-		ctx.JSON(errCodeDefiner(err), gin.H{"error": err.Error()})
+		ctx.JSON(errorCodeDefiner(err), gin.H{"error": err.Error()})
 		return
 	}
 
 	// устанавливаем хедеры под CSV
-	rows := convertOperationsToCSV(res)
 	ctx.Writer.Header().Set("Cache-Control", "no-store")
 	ctx.Writer.Header().Set("Pragma", "no-cache")
 	ctx.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Disposition")
 	ctx.Writer.Header().Set("Content-Type", "text/csv")
 	ctx.Writer.Header().Set("Content-Disposition", "attachment; filename=operations.csv")
 
-	// пишем данные
+	// готовим и пишем данные
+	rows, err := convertItemsToCSV(ctx.Request.Context(), res)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return
+		}
+		if errors.Is(err, context.DeadlineExceeded) {
+			ctx.Status(http.StatusGatewayTimeout)
+			return
+		}
+	}
 	writer := csv.NewWriter(ctx.Writer)
 	if err := writer.WriteAll(rows); err != nil {
 		log.Printf("failed to Flush csv-writer: %q", err.Error())
@@ -267,18 +270,27 @@ func (h *OperationHandler) ExportOperationsCSV(ctx *ginext.Context) {
 	}
 }
 
-func (h *OperationHandler) ExportAnalyticsCSV(ctx *ginext.Context) {
-	// парсим параметры запроса аналитики из URL
-	rpa := model.RequestParamAnalytics{}
+func (whc *WHCHandlers) ExportHistoryCSV(ctx *ginext.Context) {
+	// парсим параметры запроса из URL
+	rpa := model.RequestParam{}
 	if err := decodeQueryParams(ctx, &rpa); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
 
+	// определяем id товара и роль юзера
+	rawID, ok := ctx.Params.Get("id")
+	if !ok {
+		ctx.JSON(400, gin.H{"error": "empty item id"})
+		return
+	}
+	id := stringToInt(rawID)
+	role := stringFromCtx(ctx, "role")
+
 	// получаем массив строк
-	res, err := h.svc.GetAnalytics(ctx.Request.Context(), &rpa)
+	res, err := whc.svc.GetItemHistoryByID(ctx.Request.Context(), &rpa, id, role)
 	if err != nil {
-		ctx.JSON(errCodeDefiner(err), gin.H{"error": err.Error()})
+		ctx.JSON(errorCodeDefiner(err), gin.H{"error": err.Error()})
 		return
 	}
 
@@ -289,8 +301,18 @@ func (h *OperationHandler) ExportAnalyticsCSV(ctx *ginext.Context) {
 	ctx.Writer.Header().Set("Content-Type", "text/csv")
 	ctx.Writer.Header().Set("Content-Disposition", "attachment; filename=analytics.csv")
 
-	// пишем данные
-	rows := convertAnalyticsToCSV(res)
+	// готовим и пишем данные
+	rows, err := convertHistoryToCSV(ctx.Request.Context(), res)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return
+		}
+		if errors.Is(err, context.DeadlineExceeded) {
+			ctx.Status(http.StatusGatewayTimeout)
+			return
+		}
+	}
+
 	writer := csv.NewWriter(ctx.Writer)
 	if err := writer.WriteAll(rows); err != nil {
 		log.Printf("failed to Flush csv-writer: %q", err.Error())
@@ -298,36 +320,59 @@ func (h *OperationHandler) ExportAnalyticsCSV(ctx *ginext.Context) {
 	}
 }
 
-func convertAnalyticsToCSV(input *model.AnalyticsSummary) [][]string {
-	result := make([][]string, 0, len(input.Groups)+1)
-	start := []string{"group_key", "total_amount", "average", "operations_in_group", "mediana", "P90"}
-	result = append(result, start)
-
-	for _, v := range input.Groups {
-		row := make([]string, 0, len(start))
-		row = append(row, v.Key, strconv.FormatFloat(v.Sum/100, 'f', 2, 64), strconv.FormatFloat(v.Avg/100, 'f', 2, 64), strconv.Itoa(v.Count), strconv.FormatFloat(v.Median/100, 'f', 2, 64), strconv.FormatFloat(v.P90/100, 'f', 2, 64))
-		result = append(result, row)
-	}
-
-	end := []string{"TOTALS:", strconv.FormatFloat(input.Sum/100, 'f', 2, 64), strconv.FormatFloat(input.Avg/100, 'f', 2, 64), strconv.Itoa(input.Count), strconv.FormatFloat(input.Median/100, 'f', 2, 64), strconv.FormatFloat(input.P90/100, 'f', 2, 64)}
-	result = append(result, end)
-	return result
-}
-
-func convertOperationsToCSV(input []model.Operation) [][]string {
+func convertHistoryToCSV(ctx context.Context, input []*model.ItemHistory) ([][]string, error) {
 	result := make([][]string, 0, len(input)+1)
-	start := []string{"id", "amount", "type", "category", "actor", "date", "created", "description"}
+	start := []string{"id", "item_id", "version", "action", "changed_at", "changed_by", "old_data", "new_data"}
 	result = append(result, start)
 
 	for _, v := range input {
-		row := make([]string, 0, len(start))
-		descr := ""
-		if v.Description != nil {
-			descr = *v.Description
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+			row := make([]string, 0, len(start))
+			row = append(row,
+				strconv.Itoa(v.ID),
+				strconv.Itoa(v.ItemID),
+				strconv.Itoa(v.Version),
+				v.Action,
+				v.ChangedAt.Format("2006-01-02 15:04:05"),
+				v.ChangedBy,
+				string(v.OldData),
+				string(v.NewData))
+			result = append(result, row)
 		}
-		row = append(row, strconv.FormatInt(v.ID, 10), strconv.FormatFloat(float64(v.Amount)/100, 'f', 2, 64), v.Type, v.Category, v.Actor, v.OperationAt.Format("2006-01-02"), v.CreatedAt.Format("2006-01-02"), descr)
-		result = append(result, row)
 	}
+	return result, nil
+}
 
-	return result
+func convertItemsToCSV(ctx context.Context, input []*model.Item) ([][]string, error) {
+	result := make([][]string, 0, len(input)+1)
+	start := []string{"item_id", "title", "description", "price", "visible", "available_amount", "created_at", "updated_at", "deleted_at"}
+	result = append(result, start)
+
+	for _, v := range input {
+		select {
+		case <-ctx.Done():
+			return nil, ctx.Err()
+		default:
+			row := make([]string, 0, len(start))
+			vis := "false"
+			if v.Visible {
+				vis = "true"
+			}
+			row = append(row,
+				strconv.Itoa(v.ID),
+				v.Title,
+				v.Description,
+				strconv.Itoa(int(v.Price)),
+				vis,
+				strconv.Itoa(v.AvailableAmount),
+				v.CreatedAt.Format("2006-01-02 15:04:05"),
+				v.UpdatedAt.Format("2006-01-02 15:04:05"),
+				v.DeletedAt.Format("2006-01-02 15:04:05"))
+			result = append(result, row)
+		}
+	}
+	return result, nil
 }
