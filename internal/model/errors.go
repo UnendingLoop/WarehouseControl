@@ -4,12 +4,12 @@ import "errors"
 
 var (
 	// 404
-	ErrUserNotFound = errors.New("requested user id not found")
+	ErrUserNotFound = errors.New("requested username not found")
 	ErrItemNotFound = errors.New("requested item id not found")
 
 	// 400
 	ErrInvalidToken       = errors.New("invalid auth-token provided")
-	ErrInvalidCredentials = errors.New("email or password is incorrect")
+	ErrInvalidCredentials = errors.New("username or password is incorrect")
 
 	ErrInvalidOrderBy      = errors.New("invalid ordering parameter specified")
 	ErrInvalidAscDesc      = errors.New("invalid ASC/DESC provided")

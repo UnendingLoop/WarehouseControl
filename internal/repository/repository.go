@@ -28,6 +28,7 @@ type WHCRepo interface {
 	GetItemByID(ctx context.Context, itemID int, showDeleted bool) (*model.Item, error)
 	GetItemsList(ctx context.Context, rpi *model.RequestParam, showDeleted bool) ([]*model.Item, error)
 	GetItemHistoryByID(ctx context.Context, rph *model.RequestParam, itemID int) ([]*model.ItemHistory, error)
+	GetItemHistoryAll(ctx context.Context, rph *model.RequestParam) ([]*model.ItemHistory, error)
 }
 
 func NewPostgresImageRepo(dbconn *dbpg.DB) WHCRepo {

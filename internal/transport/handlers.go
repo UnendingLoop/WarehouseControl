@@ -228,6 +228,71 @@ func (whc *WHCHandlers) GetItemHistoryByID(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
+func (whc *WHCHandlers) GetItemsHistoryList(ctx *gin.Context) {
+	// парсим параметры запроса из URL
+	rph := model.RequestParam{}
+	if err := decodeQueryParams(ctx, &rph); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// определяем роль
+	role := stringFromCtx(ctx, "role")
+
+	// обращаемся к сервису
+	res, err := whc.svc.GetItemHistoryAll(ctx.Request.Context(), &rph, role)
+	if err != nil {
+		ctx.JSON(errorCodeDefiner(err), gin.H{"error": err.Error()})
+		return
+	}
+
+	ctx.JSON(http.StatusOK, res)
+}
+
+func (whc *WHCHandlers) ExportItemsHistory(ctx *gin.Context) {
+	// парсим параметры запроса из URL
+	rph := model.RequestParam{}
+	if err := decodeQueryParams(ctx, &rph); err != nil {
+		ctx.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		return
+	}
+
+	// определяем роль
+	role := stringFromCtx(ctx, "role")
+
+	// обращаемся к сервису
+	res, err := whc.svc.GetItemHistoryAll(ctx.Request.Context(), &rph, role)
+	if err != nil {
+		ctx.JSON(errorCodeDefiner(err), gin.H{"error": err.Error()})
+		return
+	}
+
+	// устанавливаем хедеры под CSV
+	ctx.Writer.Header().Set("Cache-Control", "no-store")
+	ctx.Writer.Header().Set("Pragma", "no-cache")
+	ctx.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Disposition")
+	ctx.Writer.Header().Set("Content-Type", "text/csv")
+	ctx.Writer.Header().Set("Content-Disposition", "attachment; filename=analytics.csv")
+
+	// готовим и пишем данные
+	rows, err := convertHistoryToCSV(ctx.Request.Context(), res)
+	if err != nil {
+		if errors.Is(err, context.Canceled) {
+			return
+		}
+		if errors.Is(err, context.DeadlineExceeded) {
+			ctx.Status(http.StatusGatewayTimeout)
+			return
+		}
+	}
+
+	writer := csv.NewWriter(ctx.Writer)
+	if err := writer.WriteAll(rows); err != nil {
+		log.Printf("failed to Flush csv-writer: %q", err.Error())
+		return
+	}
+}
+
 func (whc *WHCHandlers) ExportItemsCSV(ctx *ginext.Context) {
 	// парсим параметры запроса из URL
 	rpi := model.RequestParam{}
@@ -270,7 +335,7 @@ func (whc *WHCHandlers) ExportItemsCSV(ctx *ginext.Context) {
 	}
 }
 
-func (whc *WHCHandlers) ExportHistoryCSV(ctx *ginext.Context) {
+func (whc *WHCHandlers) ExportItemIDHistoryCSV(ctx *ginext.Context) {
 	// парсим параметры запроса из URL
 	rpa := model.RequestParam{}
 	if err := decodeQueryParams(ctx, &rpa); err != nil {
@@ -287,7 +352,7 @@ func (whc *WHCHandlers) ExportHistoryCSV(ctx *ginext.Context) {
 	id := stringToInt(rawID)
 	role := stringFromCtx(ctx, "role")
 
-	// получаем массив строк
+	// получаем массив History от сервиса
 	res, err := whc.svc.GetItemHistoryByID(ctx.Request.Context(), &rpa, id, role)
 	if err != nil {
 		ctx.JSON(errorCodeDefiner(err), gin.H{"error": err.Error()})

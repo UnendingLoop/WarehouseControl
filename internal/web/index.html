@@ -1,414 +1,479 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 
 <head>
     <meta charset="UTF-8" />
-    <title>EventBooker</title>
+    <title>Items Service UI</title>
     <style>
         body {
             font-family: sans-serif;
-            max-width: 1100px;
-            margin: 20px auto;
+            margin: 20px;
         }
 
+        h2 {
+            margin-top: 30px;
+        }
 
         table {
             border-collapse: collapse;
-            width: auto;
-            table-layout: auto;
+            width: 100%;
             margin-top: 10px;
-            margin-right: 30px;
-        }
-
-        th,
-        td {
-            padding: 6px 10px;
-            white-space: nowrap;
         }
 
         th,
         td {
             border: 1px solid #ccc;
-            padding: 6px;
+            padding: 6px 8px;
+            text-align: left;
         }
 
-        button {
-            cursor: pointer;
-            margin: 2px;
-        }
-
-        input,
-        select {
-            margin: 2px;
+        th {
+            background: #f0f0f0;
         }
 
         .hidden {
             display: none;
         }
 
-        h2 {
-            margin-top: 20px;
+        .controls {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 10px;
+        }
+
+        input,
+        select,
+        button {
+            padding: 4px 6px;
+        }
+
+        .actions button {
+            margin-right: 4px;
+        }
+
+        .danger {
+            color: red;
         }
     </style>
 </head>
 
 <body>
 
-    <h1>EventBooker</h1>
+    <h1>Items Service</h1>
 
-    <!-- AUTH -->
-    <div id="auth">
-        <h2>Login</h2>
-        <input id="signinLogin" placeholder="Login" />
-        <input id="password" type="password" placeholder="Password" />
-        <button onclick="login()">Login</button>
-        <div id="authError"></div>
+    <!-- ================= AUTH ================= -->
 
-        <h2>Sign Up</h2>
-        <input id="signupLogin" placeholder="Login" />
-        <input id="signupPassword" type="password" placeholder="Password" />
-        <select id="signupRole">
-            <option value="user">User</option>
-            <option value="admin">Admin</option>
-        </select>
+    <div id="auth-block">
+        <h2>Auth</h2>
+
+        <div class="controls">
+            <input id="authusername" placeholder="username" />
+            <input id="authpassword" placeholder="password" type="password" />
+            <select id="authrole">
+                <option value="admin">admin</option>
+                <option value="manager">manager</option>
+                <option value="viewer">viewer</option>
+                <option value="auditor">auditor</option>
+            </select>
+        </div>
+
         <button onclick="signup()">Sign Up</button>
-        <div id="signupError"></div>
+        <button onclick="login()">Login</button>
     </div>
 
-    <!-- EVENTS (admin) -->
-    <div id="eventsAdmin" class="hidden">
-        <h2>Create Event</h2>
-        <input id="eventTitle" placeholder="Title" />
-        <input id="eventDate" type="date" />
-        <input id="eventSeats" type="number" placeholder="Seats" />
-        <input id="eventPeriod" type="number" placeholder="Booking period in seconds" />
-        <button onclick="createNewEvent()">Create</button>
+    <!-- ================= MAIN ================= -->
 
-        <h2>All Events</h2>
-        <table>
+    <div id="main-block" class="hidden">
+        <div class="controls">
+            <span id="userinfo"></span>
+            <button onclick="logout()">Logout</button>
+        </div>
+
+        <!-- ===== CREATE ITEM ===== -->
+
+        <div id="create-item-block" class="hidden">
+            <h2>Create Item</h2>
+            <div class="controls">
+                <input id="ci-title" placeholder="title" />
+                <input id="ci-desc" placeholder="description" />
+                <input id="ci-price" placeholder="price" type="number" />
+                <input id="ci-amount" placeholder="amount" type="number" />
+                <label>
+                    visible <input id="ci-visible" type="checkbox" />
+                </label>
+                <button onclick="createItem()">Create</button>
+            </div>
+        </div>
+
+        <!-- ===== ITEMS LIST ===== -->
+
+        <h2>Items</h2>
+
+        <div class="controls">
+            <select id="items-order-by">
+                <option value="">order by</option>
+                <option value="id">id</option>
+                <option value="title">title</option>
+                <option value="price">price</option>
+                <option value="availability">availability</option>
+                <option value="visibility">visibility</option>
+            </select>
+
+            <label>ASC <input type="checkbox" id="items-asc"></label>
+            <label>DESC <input type="checkbox" id="items-desc"></label>
+
+            <input type="datetime-local" id="items-from">
+            <input type="datetime-local" id="items-to">
+
+            <input type="number" id="items-page" placeholder="page">
+            <input type="number" id="items-limit" placeholder="limit">
+
+            <button onclick="loadItems()">Load</button>
+            <button onclick="downloadItemsCSV()">Download CSV</button>
+        </div>
+
+        <table id="items-table">
             <thead>
                 <tr>
-                    <th>Event ID</th>
+                    <th>ID</th>
                     <th>Title</th>
-                    <th>Date</th>
-                    <th>Seats total</th>
-                    <th>Seats available</th>
+                    <th>Description</th>
+                    <th>Price</th>
+                    <th>Visible</th>
+                    <th>Amount</th>
+                    <th>Created</th>
+                    <th>Updated</th>
                     <th>Actions</th>
                 </tr>
             </thead>
-            <tbody id="eventsAdminBody"></tbody>
+            <tbody></tbody>
         </table>
-    </div>
 
-    <!-- EVENTS (user) -->
-    <div id="eventsUser" class="hidden">
-        <h2>Events</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Event ID</th>
-                    <th>Title</th>
-                    <th>Date</th>
-                    <th>Seats total</th>
-                    <th>Seats available</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="eventsUserBody"></tbody>
-        </table>
-    </div>
+        <!-- ===== HISTORY (ADMIN + AUDITOR) ===== -->
 
-    <!-- BOOKINGS -->
-    <div id="bookings" class="hidden">
-        <h2>My Bookings</h2>
-        <table>
-            <thead>
-                <tr>
-                    <th>Book ID</th>
-                    <th>Event ID</th>
-                    <th>UserID</th>
-                    <th>Deadline</th>
-                    <th>Status</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody id="bookingsBody"></tbody>
-        </table>
+        <div id="history-block" class="hidden">
+            <h2>Items History</h2>
+
+            <div class="controls">
+                <select id="history-order-by">
+                    <option value="">order by</option>
+                    <option value="id">id</option>
+                    <option value="action">action</option>
+                    <option value="version">version</option>
+                    <option value="actor">actor</option>
+                </select>
+
+                <label>ASC <input type="checkbox" id="history-asc"></label>
+                <label>DESC <input type="checkbox" id="history-desc"></label>
+
+                <input type="datetime-local" id="history-from">
+                <input type="datetime-local" id="history-to">
+
+                <input type="number" id="history-page" placeholder="page">
+                <input type="number" id="history-limit" placeholder="limit">
+
+                <button onclick="loadHistory()">Load</button>
+                <button onclick="downloadHistoryCSV()">Download CSV</button>
+            </div>
+
+            <table id="history-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>ItemID</th>
+                        <th>Version</th>
+                        <th>Action</th>
+                        <th>Actor</th>
+                        <th>ChangedAt</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
     </div>
 
     <script>
-        const API = "http://localhost:8080";
-        let token = localStorage.getItem("token");
-        let role = localStorage.getItem("role");
+        /* ================= HELPERS ================= */
 
-        function authHeaders() {
-            return { "Authorization": "Bearer " + token };
+        function getToken() {
+            return localStorage.getItem("jwt");
         }
 
-        async function signup() {
-            const res = await apiFetch(API + "/auth/signup", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    email: signupLogin.value,
-                    password: signupPassword.value,
-                    role: signupRole.value
-                })
+        function setToken(token) {
+            localStorage.setItem("jwt", token);
+        }
+
+        function authHeaders() {
+            return {
+                "Authorization": "Bearer " + getToken(),
+                "Content-Type": "application/json"
+            };
+        }
+
+        function parseJWT(token) {
+            const payload = token.split(".")[1];
+            return JSON.parse(atob(payload));
+        }
+
+        function qs(params) {
+            const q = new URLSearchParams();
+            Object.entries(params).forEach(([k, v]) => {
+                if (v !== null && v !== "" && v !== undefined) {
+                    q.append(k, v);
+                }
             });
+            return q.toString();
+        }
 
-            if (!res.ok) {
-                signupError.innerText = "Sign up failed";
-                return;
-            }
+        /* ================= AUTH ================= */
 
-            const data = await res.json();
-            token = data.token;
-            role = data.user.role;
-
-            //localStorage.setItem("token", token);
-            localStorage.setItem("role", role);
-
-
-            init();
+        async function signup() {
+            await auth("/auth/signup");
         }
 
         async function login() {
-            const res = await apiFetch(API + "/auth/login", {
+            await auth("/auth/login");
+        }
+
+        async function auth(url) {
+            const res = await fetch(url, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ email: signinLogin.value, password: password.value })
+                body: JSON.stringify({
+                    username: authusername.value,
+                    password: authpassword.value,
+                    role: authrole.value
+                })
             });
 
             if (!res.ok) {
-                authError.innerText = "Login failed";
+                alert("auth failed");
                 return;
             }
 
             const data = await res.json();
-            token = data.token;
-            role = data.user.role;
-            email = data.email;
-            user_id = data.user.id;
-
-            localStorage.setItem("token", token);
-            localStorage.setItem("role", role);
-            localStorage.setItem("email", email);
-            localStorage.setItem("user_id", user_id);
-
+            setToken(data.token);
             init();
         }
 
-        async function loadEventsAdmin() {
-            const res = await apiFetch(API + "/events", { headers: authHeaders() });
-            const events = await res.json();
-
-            eventsAdminBody.innerHTML = "";
-            events.forEach(e => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-      <td>${e.id}</td>
-      <td>${e.title}</td>
-      <td>${e.eventdate}</td>
-      <td>${e.total}</td>
-      <td>${e.avail}</td>
-
-      <td>
-        <button onclick="deleteEvent('${e.id}')">Delete</button>
-      </td>
-    `;
-                eventsAdminBody.appendChild(tr);
-            });
-        }
-
-        async function loadEventsUser() {
-            const res = await apiFetch(API + "/events", { headers: authHeaders() });
-            const events = await res.json();
-
-            eventsUserBody.innerHTML = "";
-            events.forEach(e => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-      <td>${e.id}</td>
-      <td>${e.title}</td>
-      <td>${e.eventdate}</td>
-      <td>${e.total}</td>
-      <td>${e.avail}</td>
-      <td>
-        <button onclick="book('${e.id}')">Book</button>
-      </td>
-    `;
-                eventsUserBody.appendChild(tr);
-            });
-        }
-
-        async function loadBookings() {
-            const res = await apiFetch(API + "/bookings/my", { headers: authHeaders() });
-            const bookings = await res.json();
-
-            bookingsBody.innerHTML = "";
-            bookings.forEach(b => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-      <td>${b.id}</td>
-      <td>${b.eventid}</td>
-      <td>${b.userid}</td>
-      <td>${b.confirm_deadline}</td>
-      <td>${b.status || "created"}</td>
-      <td>
-        ${b.status === "created" ? `<button onclick="confirmBooking('${b.id}')">Confirm</button>` : ""}
-        <button onclick="cancelBooking('${b.id}')">Cancel</button>
-      </td>
-    `;
-                bookingsBody.appendChild(tr);
-            });
-        }
-
-        async function createNewEvent() {
-            await apiFetch(API + "/events", {
-                method: "POST",
-                headers: { ...authHeaders(), "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    title: eventTitle.value,
-                    eventdate: eventDate.value,
-                    total: parseInt(eventSeats.value),
-                    period: parseInt(eventPeriod.value)
-                })
-            });
-            loadEventsAdmin();
-        }
-
-        async function deleteEvent(id) {
-            await apiFetch(API + "/events/" + id, { method: "DELETE", headers: authHeaders() });
-            loadEventsAdmin();
-        }
-
-        async function book(id) {
-            await apiFetch(API + "/bookings", {
-                method: "POST",
-                headers: { ...authHeaders(), "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    eventid: parseInt(id)
-                })
-            });
-            loadEventsUser();
-            loadBookings();
-        }
-
-        async function confirmBooking(id) {
-            await apiFetch(API + "/bookings/" + id + "/confirm", { method: "POST", headers: authHeaders() });
-            loadBookings();
-            loadEventsUser();
-        }
-
-        async function cancelBooking(id) {
-            await apiFetch(API + "/bookings/" + id, { method: "DELETE", headers: authHeaders() });
-            loadBookings();
-            if (role === "user") loadEventsUser();
-            else loadEventsAdmin();
-        }
-
-        function render() {
-            // всё скрываем
-            auth.classList.add("hidden");
-            eventsAdmin.classList.add("hidden");
-            eventsUser.classList.add("hidden");
-            bookings.classList.add("hidden");
-
-            if (!token) {
-                auth.classList.remove("hidden");
-                return;
-            }
-
-
-
-            if (role === "admin") {
-                eventsAdmin.classList.remove("hidden");
-                loadEventsAdmin();
-            } else {
-                eventsUser.classList.remove("hidden");
-                bookings.classList.remove("hidden");
-                loadEventsUser();
-                loadBookings();
-            }
-
-
-        }
-
-        async function apiFetch(url, options = {}) {
-            const res = await fetch(url, {
-                ...options,
-                credentials: "include"
-            });
-
-            if (!res.ok) {
-                let msg = "Unexpected error";
-
-                try {
-                    const body = await res.json();
-                    msg = body.error || msg;
-                } catch { }
-
-                if (res.status === 401) {
-                    logout();
-                }
-
-                showError(msg);
-                throw new Error(msg);
-            }
-
-            return res;
-        }
-
-
         function logout() {
-            token = null;
-            role = null;
-            localStorage.clear();
-            render();
-
-            // показать логин
-            auth.classList.remove("hidden");
-            eventsAdmin.classList.add("hidden");
-            eventsUser.classList.add("hidden");
-            bookings.classList.add("hidden");
+            localStorage.removeItem("jwt");
+            location.reload();
         }
 
-        function showError(message) {
-            const popup = document.getElementById("errorPopup");
-            popup.textContent = message;
-            popup.classList.remove("hidden");
-
-            setTimeout(() => {
-                popup.classList.add("hidden");
-            }, 4000);
-        }
+        /* ================= INIT ================= */
 
         function init() {
-            token = localStorage.getItem("token");
-            role = localStorage.getItem("role");
-            render();
+            const token = getToken();
+            if (!token) return;
+
+            const user = parseJWT(token);
+
+            auth - block.classList.add("hidden");
+            main - block.classList.remove("hidden");
+
+            userinfo.textContent = `User: ${user.username}, role: ${user.role}`;
+
+            if (user.role === "admin" || user.role === "manager") {
+                create - item - block.classList.remove("hidden");
+            }
+
+            if (user.role === "admin" || user.role === "auditor") {
+                history - block.classList.remove("hidden");
+            }
+
+            loadItems();
+            if (!history - block.classList.contains("hidden")) {
+                loadHistory();
+            }
         }
 
+        /* ================= ITEMS ================= */
 
+        async function loadItems() {
+            const query = qs({
+                order_by: items - order - by.value,
+                asc: items - asc.checked,
+                desc: items - desc.checked,
+                from: items - from.value,
+                to: items - to.value,
+                page: items - page.value,
+                limit: items - limit.value
+            });
+
+            const res = await fetch("/items?" + query, { headers: authHeaders() });
+            const items = await res.json();
+
+            const tbody = items - table.querySelector("tbody");
+            tbody.innerHTML = "";
+
+            items.forEach(i => {
+                const tr = document.createElement("tr");
+
+                tr.innerHTML = `
+      <td>${i.id}</td>
+      <td contenteditable="false">${i.title}</td>
+      <td contenteditable="false">${i.description || ""}</td>
+      <td contenteditable="false">${i.price}</td>
+      <td contenteditable="false">${i.visible}</td>
+      <td contenteditable="false">${i.available_amount}</td>
+      <td>${i.created_at}</td>
+      <td>${i.updated_at}</td>
+      <td class="actions"></td>
+    `;
+
+                renderActions(tr, i);
+                tbody.appendChild(tr);
+            });
+        }
+
+        function renderActions(tr, item) {
+            const user = parseJWT(getToken());
+            const cell = tr.querySelector(".actions");
+
+            if (user.role === "admin" || user.role === "manager") {
+                const edit = document.createElement("button");
+                edit.textContent = "Edit";
+                edit.onclick = () => toggleEdit(tr, item.id, edit);
+                cell.appendChild(edit);
+
+                const del = document.createElement("button");
+                del.textContent = "Delete";
+                del.className = "danger";
+                del.onclick = () => deleteItem(item.id);
+                cell.appendChild(del);
+            }
+
+            if (user.role === "admin" || user.role === "auditor") {
+                const hist = document.createElement("button");
+                hist.textContent = "History CSV";
+                hist.onclick = () => window.location = `/items/${item.id}/history/csv`;
+                cell.appendChild(hist);
+            }
+        }
+
+        async function toggleEdit(tr, id, btn) {
+            const editable = btn.textContent === "Edit";
+            btn.textContent = editable ? "Save" : "Edit";
+
+            const tds = tr.querySelectorAll("td");
+            [1, 2, 3, 4, 5].forEach(i => tds[i].contentEditable = editable);
+
+            if (!editable) {
+                const body = {
+                    title: tds[1].textContent,
+                    description: tds[2].textContent,
+                    price: Number(tds[3].textContent),
+                    visible: tds[4].textContent === "true",
+                    available_amount: Number(tds[5].textContent)
+                };
+
+                await fetch(`/items/${id}`, {
+                    method: "PATCH",
+                    headers: authHeaders(),
+                    body: JSON.stringify(body)
+                });
+
+                loadItems();
+            }
+        }
+
+        async function deleteItem(id) {
+            await fetch(`/items/${id}`, {
+                method: "DELETE",
+                headers: authHeaders()
+            });
+            loadItems();
+        }
+
+        /* ================= CREATE ================= */
+
+        async function createItem() {
+            await fetch("/items", {
+                method: "POST",
+                headers: authHeaders(),
+                body: JSON.stringify({
+                    title: ci - title.value,
+                    description: ci - desc.value,
+                    price: Number(ci - price.value),
+                    available_amount: Number(ci - amount.value),
+                    visible: ci - visible.checked
+                })
+            });
+
+            loadItems();
+        }
+
+        /* ================= CSV ================= */
+
+        function downloadItemsCSV() {
+            const query = qs({
+                order_by: items - order - by.value,
+                asc: items - asc.checked,
+                desc: items - desc.checked,
+                from: items - from.value,
+                to: items - to.value,
+                page: items - page.value,
+                limit: items - limit.value
+            });
+
+            window.location = "/items/csv?" + query;
+        }
+
+        /* ================= HISTORY ================= */
+
+        async function loadHistory() {
+            const query = qs({
+                order_by: history - order - by.value,
+                asc: history - asc.checked,
+                desc: history - desc.checked,
+                from: history - from.value,
+                to: history - to.value,
+                page: history - page.value,
+                limit: history - limit.value
+            });
+
+            const res = await fetch("/items/history?" + query, {
+                headers: authHeaders()
+            });
+
+            const data = await res.json();
+            const tbody = history - table.querySelector("tbody");
+            tbody.innerHTML = "";
+
+            data.forEach(h => {
+                const tr = document.createElement("tr");
+                tr.innerHTML = `
+      <td>${h.id}</td>
+      <td>${h.item_id}</td>
+      <td>${h.version}</td>
+      <td>${h.action}</td>
+      <td>${h.changed_by}</td>
+      <td>${h.changed_at}</td>
+    `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        function downloadHistoryCSV() {
+            const query = qs({
+                order_by: history - order - by.value,
+                asc: history - asc.checked,
+                desc: history - desc.checked,
+                from: history - from.value,
+                to: history - to.value,
+                page: history - page.value,
+                limit: history - limit.value
+            });
+
+            window.location = "/items/history/csv?" + query;
+        }
+
+        /* ================= START ================= */
 
         init();
     </script>
-    <div id="errorPopup" class="hidden"></div>
-    <style>
-        #errorPopup {
-            position: fixed;
-            top: 20px;
-            right: 20px;
-            background: #f44336;
-            color: white;
-            padding: 12px 16px;
-            border-radius: 6px;
-            box-shadow: 0 2px 10px rgba(0, 0, 0, .2);
-            max-width: 400px;
-            z-index: 1000;
-        }
-    </style>
-
 
 </body>
 

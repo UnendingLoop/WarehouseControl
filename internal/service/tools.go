@@ -36,6 +36,10 @@ func validateItem(item *model.Item) error {
 }
 
 func validateItemUpdate(item *model.ItemUpdate) error {
+	if item.Title == nil && item.Description == nil && item.Price == nil && item.Visible == nil && item.AvailableAmount == nil {
+		return model.ErrEmptyItemInfo
+	}
+
 	if item.Title != nil && *item.Title == "" {
 		return model.ErrEmptyTitle
 	}

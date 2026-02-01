@@ -71,7 +71,7 @@ func (pr PostgresRepo) CreateItem(ctx context.Context, newItem *model.Item) erro
 }
 
 func (pr PostgresRepo) DeleteItem(ctx context.Context, itemID int) error {
-	query := `DELETE FROM items
+	query := `UPDATE items SET deleted_at = DEFAULT
 	WHERE id = $1`
 
 	res, err := pr.DB.ExecContext(ctx, query, itemID)
@@ -159,21 +159,21 @@ func (pr PostgresRepo) GetItemsList(ctx context.Context, rpi *model.RequestParam
 	}
 
 	// добавляем ограничение по времени
-	periodExpr := definePeriodExpr(rpi.StartTime, rpi.EndTime, "created_at")
+	periodExpr := definePeriodExpr(rpi.StartTime, rpi.EndTime, "WHERE", "created_at")
 	// если нет доступа на просмотр удаленных - добавляем условие
 	if !canSeeDeleted {
 		switch periodExpr {
 		case "":
-			periodExpr += `WHERE deleted_at = NULL`
+			periodExpr += `WHERE deleted_at = NULL `
 		default:
-			periodExpr += ` AND deleted_at = NULL`
+			periodExpr += ` AND deleted_at = NULL `
 		}
 	}
 
 	limofExpr := defineLimitOffsetExpr(rpi.Limit, rpi.Page)
 
 	// собираем конечный квери
-	query = query + orderExpr + periodExpr + limofExpr
+	query = query + periodExpr + orderExpr + limofExpr
 
 	// выполняем запрос
 	rows, err := pr.DB.QueryContext(ctx, query)
@@ -217,20 +217,80 @@ func (pr PostgresRepo) GetItemHistoryByID(ctx context.Context, rph *model.Reques
 	FROM items_history
 	WHERE item_id = $1`
 
+	// добавляем ограничение по времени
+	periodExpr := definePeriodExpr(rph.StartTime, rph.EndTime, "AND", "changed_at")
+
 	// добавляем сортировку по полю
 	orderExpr, err := defineOrderExpr(rph.OrderBy, rph.ASC, rph.DESC)
 	if err != nil {
 		return nil, err
 	}
 
-	// добавляем ограничение по времени
-	periodExpr := definePeriodExpr(rph.StartTime, rph.EndTime, "changed_at")
-
 	// применяем лимит и оффсет
 	limofExpr := defineLimitOffsetExpr(rph.Limit, rph.Page)
 
 	// собираем конечный квери
 	query = query + orderExpr + periodExpr + limofExpr
+
+	// выполняем запрос
+	rows, err := pr.DB.QueryContext(ctx, query)
+	if err != nil {
+		switch {
+		case errors.Is(err, sql.ErrNoRows):
+			return nil, model.ErrUserNotFound
+		default:
+			return nil, err // 500
+		}
+	}
+
+	defer func() {
+		if err := rows.Close(); err != nil {
+			log.Printf("Error while closing *sql.Rows after scanning: %v", err)
+		}
+	}()
+
+	history := make([]*model.ItemHistory, 0)
+
+	for rows.Next() {
+		var h model.ItemHistory
+		if err := rows.Scan(&h.ID,
+			&h.ItemID,
+			&h.Version,
+			&h.Action,
+			&h.ChangedAt,
+			&h.ChangedBy,
+			&h.OldData,
+			&h.NewData); err != nil {
+			return nil, err
+		}
+		history = append(history, &h)
+	}
+
+	if rows.Err() != nil {
+		return nil, rows.Err()
+	}
+
+	return history, nil
+}
+
+func (pr PostgresRepo) GetItemHistoryAll(ctx context.Context, rph *model.RequestParam) ([]*model.ItemHistory, error) {
+	query := `SELECT id, item_id, version, action, changed_at, changed_by, old_data, new_data 
+	FROM items_history `
+
+	// добавляем ограничение по времени
+	periodExpr := definePeriodExpr(rph.StartTime, rph.EndTime, "WHERE", "changed_at")
+
+	// добавляем сортировку по полю
+	orderExpr, err := defineOrderExpr(rph.OrderBy, rph.ASC, rph.DESC)
+	if err != nil {
+		return nil, err
+	}
+
+	// применяем лимит и оффсет
+	limofExpr := defineLimitOffsetExpr(rph.Limit, rph.Page)
+
+	// собираем конечный квери
+	query = query + periodExpr + orderExpr + limofExpr
 
 	// выполняем запрос
 	rows, err := pr.DB.QueryContext(ctx, query)

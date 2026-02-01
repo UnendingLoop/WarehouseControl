@@ -26,6 +26,7 @@ type WHCService interface {
 
 	GetItemsList(ctx context.Context, rpi *model.RequestParam, role string) ([]*model.Item, error)
 	GetItemHistoryByID(ctx context.Context, rph *model.RequestParam, id int, role string) ([]*model.ItemHistory, error)
+	GetItemHistoryAll(ctx context.Context, rph *model.RequestParam, role string) ([]*model.ItemHistory, error)
 }
 
 func NewEBHandlers(svc WHCService) *WHCHandlers {

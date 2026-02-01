@@ -13,7 +13,7 @@ type User struct {
 	ID        int       `json:"id,omitempty" db:"id"`
 	UserName  string    `json:"username" db:"username"`
 	Role      string    `json:"role" db:"role"`
-	PassHash  string    `json:"-" db:"pass_hash"`
+	PassHash  string    `json:"password" db:"pass_hash"`
 	CreatedAt time.Time `json:"created_at" db:"created_at"`
 }
 
@@ -24,7 +24,7 @@ const (
 	RoleAuditor = "auditor"
 )
 
-var RolesMap = map[string]struct{}{RoleAdmin: {}, RoleManager: {}, RoleViewer: {}}
+var RolesMap = map[string]struct{}{RoleAdmin: {}, RoleManager: {}, RoleViewer: {}, RoleAuditor: {}}
 
 // =============== Товар ========================
 

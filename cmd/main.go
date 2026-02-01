@@ -58,15 +58,18 @@ func main() {
 	auth.POST("/login", handlers.LoginUser)   // авторизация
 
 	items := engine.Group("/items", mwauthlog.RequireAuth([]byte(appConfig.GetString("SECRET"))))
-	items.POST("", handlers.CreateItem)                    // создание товара
-	items.PATCH("/:id", handlers.GetItemByID)              // обновление товара по ID
-	items.GET("/:id", handlers.GetItemByID)                // получение товара по ID
-	items.GET("/:id/history", handlers.GetItemHistoryByID) // получение истоии изменений товара по его ID
-	items.DELETE("/:id", handlers.DeleteItem)              // удаление по ID
-	items.GET("", handlers.GetItemsList)                   // получение всех товаров
+	items.POST("", handlers.CreateItem)                    // создание Item
+	items.PATCH("/:id", handlers.GetItemByID)              // обновление Item по ID
+	items.GET("/:id", handlers.GetItemByID)                // получение Item по ID
+	items.GET("/:id/history", handlers.GetItemHistoryByID) // получение History товара по его ID
+	items.DELETE("/:id", handlers.DeleteItem)              // удаление Item по ID
+	items.GET("", handlers.GetItemsList)                   // получение всех Item
 
-	items.GET("/csv", handlers.ExportItemsCSV)                 // CSV: получение всех товаров
-	items.GET("/:id/history/csv", handlers.GetItemHistoryByID) // CSV: получение истоии изменений товара по его ID
+	items.GET("/history", handlers.GetItemsHistoryList) // получение History всех товаров
+
+	items.GET("/csv", handlers.ExportItemsCSV)                     // CSV: получение всех Item
+	items.GET("/:id/history/csv", handlers.ExportItemIDHistoryCSV) // CSV: получение History товара по его ID
+	items.GET("/history/csv", handlers.ExportItemsHistory)         // CSV: получение History всех товаров
 
 	srv := &http.Server{
 		Addr:    ":" + appConfig.GetString("APP_PORT"),

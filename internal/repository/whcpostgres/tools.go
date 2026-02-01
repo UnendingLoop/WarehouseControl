@@ -56,35 +56,35 @@ func defineOrderExpr(orderBy *string, asc, desc bool) (string, error) {
 
 	switch *orderBy {
 	case model.ItemsOrderByID:
-		return fmt.Sprintf("ORDER BY id %s ", direction), nil
+		return fmt.Sprintf(" ORDER BY id %s ", direction), nil
 	case model.ItemsOrderByTitle:
-		return fmt.Sprintf("ORDER BY title %s ", direction), nil
+		return fmt.Sprintf(" ORDER BY title %s ", direction), nil
 	case model.ItemsOrderByPrice:
-		return fmt.Sprintf("ORDER BY price %s ", direction), nil
+		return fmt.Sprintf(" ORDER BY price %s ", direction), nil
 	case model.ItemsOrderByAvailability:
-		return fmt.Sprintf("ORDER BY available_amount %s ", direction), nil
+		return fmt.Sprintf(" ORDER BY available_amount %s ", direction), nil
 	case model.ItemsOrderByVisibility:
-		return fmt.Sprintf("ORDER BY visible %s ", direction), nil
+		return fmt.Sprintf(" ORDER BY visible %s ", direction), nil
 
 	case model.HistoryOrderByAction:
-		return fmt.Sprintf("ORDER BY action %s ", direction), nil
+		return fmt.Sprintf(" ORDER BY action %s ", direction), nil
 	case model.HistoryOrderByVersion:
-		return fmt.Sprintf("ORDER BY version %s ", direction), nil
+		return fmt.Sprintf(" ORDER BY version %s ", direction), nil
 	case model.HistoryOrderByActor:
-		return fmt.Sprintf("ORDER BY changed_by %s ", direction), nil
+		return fmt.Sprintf(" ORDER BY changed_by %s ", direction), nil
 	default:
 		return "", model.ErrInvalidOrderBy
 	}
 }
 
-func definePeriodExpr(start, end *time.Time, dbField string) string {
+func definePeriodExpr(start, end *time.Time, leadOp string, dbField string) string {
 	switch {
 	case start != nil && end != nil:
-		return fmt.Sprintf("WHERE %s BETWEEN '%s' AND '%s'", dbField, start.Format(time.RFC3339), end.Format(time.RFC3339))
+		return fmt.Sprintf(" %s %s BETWEEN '%s' AND '%s'", leadOp, dbField, start.Format(time.RFC3339), end.Format(time.RFC3339))
 	case start != nil:
-		return fmt.Sprintf("WHERE %s > '%s'", dbField, start.Format(time.RFC3339))
+		return fmt.Sprintf(" %s %s > '%s'", leadOp, dbField, start.Format(time.RFC3339))
 	case end != nil:
-		return fmt.Sprintf("WHERE %s < '%s'", dbField, end.Format(time.RFC3339))
+		return fmt.Sprintf(" %s %s < '%s'", leadOp, dbField, end.Format(time.RFC3339))
 	default:
 		return ""
 	}

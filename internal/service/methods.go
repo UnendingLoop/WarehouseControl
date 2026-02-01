@@ -207,3 +207,23 @@ func (svc WHCService) GetItemHistoryByID(ctx context.Context, rph *model.Request
 
 	return res, nil
 }
+
+func (svc WHCService) GetItemHistoryAll(ctx context.Context, rph *model.RequestParam, role string) ([]*model.ItemHistory, error) {
+	rid := model.RequestIDFromCtx(ctx)
+
+	if !svc.policy.AccessToGetHistory(role) {
+		return nil, model.ErrAccessDenied
+	}
+
+	if err := validateReqParams(rph); err != nil {
+		return nil, err
+	}
+
+	res, err := svc.repo.GetItemHistoryAll(ctx, rph)
+	if err != nil {
+		log.Printf("RID %q Failed to get all history from DB in 'GetItemHistoryAll': %q", rid, err)
+		return nil, model.ErrCommon500
+	}
+
+	return res, nil
+}
