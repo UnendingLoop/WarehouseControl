@@ -146,9 +146,10 @@ func (whc *WHCHandlers) UpdateItem(ctx *gin.Context) {
 		return
 	}
 	item.UpdatedBy = userName
+	item.ID = id
 
 	// передаем в сервис
-	if err := whc.svc.UpdateItemByID(ctx.Request.Context(), id, &item, role); err != nil {
+	if err := whc.svc.UpdateItemByID(ctx.Request.Context(), &item, role); err != nil {
 		ctx.JSON(errorCodeDefiner(err), gin.H{"error": err.Error()})
 		return
 	}

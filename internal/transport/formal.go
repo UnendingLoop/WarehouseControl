@@ -18,7 +18,7 @@ type WHCHandlers struct {
 type WHCService interface {
 	CreateItem(ctx context.Context, item *model.Item, role string) error
 	GetItemByID(ctx context.Context, id int, role string) (*model.Item, error)
-	UpdateItemByID(ctx context.Context, id int, item *model.ItemUpdate, role string) error
+	UpdateItemByID(ctx context.Context, item *model.ItemUpdate, role string) error
 	DeleteItemByID(ctx context.Context, id int, role, username string) error
 
 	CreateUser(ctx context.Context, user *model.User) (string, error)

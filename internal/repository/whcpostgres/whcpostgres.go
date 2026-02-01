@@ -106,6 +106,8 @@ func (pr PostgresRepo) UpdateItem(ctx context.Context, uItem *model.ItemUpdate, 
 	// вставляем id первым аргументом
 	args := append([]any{uItem.ID}, values...)
 
+	log.Printf("Update-query: %q \nArguments: %v", query, args)
+
 	res, err := pr.DB.ExecContext(ctx, query, args...)
 	if err != nil {
 		return err

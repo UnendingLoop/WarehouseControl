@@ -55,10 +55,10 @@ func (svc WHCService) GetItemByID(ctx context.Context, id int, role string) (*mo
 	return res, nil
 }
 
-func (svc WHCService) UpdateItemByID(ctx context.Context, id int, item *model.ItemUpdate, role string) error {
+func (svc WHCService) UpdateItemByID(ctx context.Context, item *model.ItemUpdate, role string) error {
 	rid := model.RequestIDFromCtx(ctx)
 
-	if id <= 0 {
+	if item.ID <= 0 {
 		return model.ErrIncorrectItemID
 	}
 

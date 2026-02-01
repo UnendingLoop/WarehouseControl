@@ -141,10 +141,10 @@
         }
 
         function renderItems(items) {
-            itemsTable.innerHTML = '<tr><th>ID</th><th>Title</th><th>Price</th><th>Amount</th><th>Visible</th><th>Actions</th></tr>';
+            itemsTable.innerHTML = '<tr><th>ID</th><th>Title</th><th>Description</th><th>Price</th><th>Amount</th><th>Visible</th><th>Actions</th></tr>';
             items.forEach(it => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `<td>${it.id}</td><td contenteditable="false">${it.title}</td><td contenteditable="false">${it.price}</td><td contenteditable="false">${it.available_amount}</td><td>${it.visible}</td>`;
+                tr.innerHTML = `<td>${it.id}</td><td contenteditable="false">${it.title}</td><td contenteditable="false">${it.description}</td><td contenteditable="false">${it.price}</td><td contenteditable="false">${it.available_amount}</td><td contenteditable="false">${it.visible}</td>`;
                 const act = document.createElement('td'); act.className = 'actions';
                 if (currentRole !== 'viewer' && currentRole !== 'auditor') {
                     const edit = document.createElement('button'); edit.textContent = 'Edit';
