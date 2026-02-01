@@ -135,7 +135,7 @@
             if (items_order.value) qs.append('order_by', items_order.value);
             if (items_from.value) qs.append('from', items_from.value);
             if (items_to.value) qs.append('to', items_to.value);
-            const res = await fetch('/items?' + qs);
+            const res = await fetch('/items' + qs);
             const data = await res.json();
             renderItems(data);
         }
@@ -169,12 +169,16 @@
             if (editing) {
                 await fetch('/items/' + id, {
                     method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
-                        title: tds[1].innerText, price: +tds[2].innerText, available_amount: +tds[3].innerText
+                        title: tds[1].innerText,
+                        description: tds[2].innerText,
+                        price: +tds[3].innerText,
+                        available_amount: +tds[4].innerText,
+                        visible: tds[5].querySelector('input') ? tds[5].querySelector('input').checked : tds[5].innerText === 'true',
                     })
                 });
                 btn.textContent = 'Edit'; loadItems();
             } else {
-                tds[1].contentEditable = tds[2].contentEditable = tds[3].contentEditable = true;
+                tds[1].contentEditable = tds[2].contentEditable = tds[3].contentEditable = tds[4].contentEditable = tds[5].contentEditable = true;
                 btn.textContent = 'Save';
             }
         }

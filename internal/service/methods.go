@@ -72,7 +72,7 @@ func (svc WHCService) UpdateItemByID(ctx context.Context, item *model.ItemUpdate
 
 	if err := svc.repo.UpdateItem(ctx, item, svc.policy.AccessToSeeDeleted(role)); err != nil {
 		switch {
-		case errors.Is(err, model.ErrUserNotFound):
+		case errors.Is(err, model.ErrItemNotFound):
 			return err
 		default:
 			log.Printf("RID %q Failed to update item in DB in 'UpdateItemByID': %q", rid, err)

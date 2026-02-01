@@ -129,7 +129,6 @@ func (whc *WHCHandlers) UpdateItem(ctx *gin.Context) {
 	uid := intFromCtx(ctx, "user_id")
 	userName := stringFromCtx(ctx, "username")
 	role := stringFromCtx(ctx, "role")
-	log.Printf("rid=%q userID=%d userName=%q role=%q creating event", rid, uid, userName, role)
 
 	// определяем id
 	rawID, ok := ctx.Params.Get("id")
@@ -138,6 +137,7 @@ func (whc *WHCHandlers) UpdateItem(ctx *gin.Context) {
 		return
 	}
 	id := stringToInt(rawID)
+	log.Printf("rid=%q userID=%d userName=%q role=%q updating item #%d", rid, uid, userName, role, id)
 
 	// читаем обновленные данные товара
 	var item model.ItemUpdate
@@ -164,8 +164,6 @@ func (whc *WHCHandlers) DeleteItem(ctx *gin.Context) {
 	username := stringFromCtx(ctx, "username")
 	role := stringFromCtx(ctx, "role")
 
-	log.Printf("rid=%q userID=%d userName=%q role=%q deleting event", rid, uid, username, role)
-
 	// определяем id
 	rawID, ok := ctx.Params.Get("id")
 	if !ok {
@@ -173,6 +171,8 @@ func (whc *WHCHandlers) DeleteItem(ctx *gin.Context) {
 		return
 	}
 	id := stringToInt(rawID)
+
+	log.Printf("rid=%q userID=%d userName=%q role=%q deleting item #%d", rid, uid, username, role, id)
 
 	// передаем в сервис
 	err := whc.svc.DeleteItemByID(ctx.Request.Context(), id, role, username)
