@@ -1,4 +1,4 @@
-// Package ebpostgres provides methods for communicating with DB PostgresQL to service-layer
+// Package whcpostgres provides methods for communicating with DB PostgresQL to service-layer
 package whcpostgres
 
 import (

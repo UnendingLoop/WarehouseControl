@@ -17,10 +17,10 @@ services:
       - pg-data:/var/lib/postgresql/data
   api:
     build: .
-    image: eventbooker
-    container_name: eventbooker
+    image: warehousecontrol
+    container_name: warehousecontrol
     env_file: .env
-    command: [ "/usr/local/bin/eventbooker" ]
+    command: [ "/usr/local/bin/warehousecontrol" ]
     ports:
       - "8080:8080"
     depends_on:

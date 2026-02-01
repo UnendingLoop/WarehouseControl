@@ -33,6 +33,5 @@ var (
 	ErrCommon500 = errors.New("something went wrong. Try again later")
 
 	// 409
-	ErrEventBusy         = errors.New("requested event not available for deletion. Remove confirmed bookings first")
-	ErrUserAlreadyExists = errors.New("user with such email already exists")
+	ErrUserAlreadyExists = errors.New("user with such username already exists")
 )
