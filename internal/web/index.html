@@ -1,17 +1,13 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 
 <head>
     <meta charset="UTF-8" />
     <title>Items Service UI</title>
     <style>
         body {
-            font-family: sans-serif;
+            font-family: Arial, sans-serif;
             margin: 20px;
-        }
-
-        h2 {
-            margin-top: 30px;
         }
 
         table {
@@ -23,458 +19,181 @@
         th,
         td {
             border: 1px solid #ccc;
-            padding: 6px 8px;
-            text-align: left;
+            padding: 6px;
         }
 
         th {
-            background: #f0f0f0;
+            background: #eee;
         }
 
         .hidden {
             display: none;
         }
 
-        .controls {
-            display: flex;
-            gap: 8px;
-            flex-wrap: wrap;
-            margin-bottom: 10px;
-        }
-
-        input,
-        select,
-        button {
-            padding: 4px 6px;
-        }
-
         .actions button {
             margin-right: 4px;
         }
 
-        .danger {
-            color: red;
+        .block {
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 20px;
         }
     </style>
 </head>
 
 <body>
+    <h2>Items Service</h2>
+    <button id="logoutBtn" class="hidden">Logout</button>
 
-    <h1>Items Service</h1>
-
-    <!-- ================= AUTH ================= -->
-
-    <div id="auth-block">
-        <h2>Auth</h2>
-
-        <div class="controls">
-            <input id="authusername" placeholder="username" />
-            <input id="authpassword" placeholder="password" type="password" />
-            <select id="authrole">
-                <option value="admin">admin</option>
-                <option value="manager">manager</option>
-                <option value="viewer">viewer</option>
-                <option value="auditor">auditor</option>
-            </select>
-        </div>
-
-        <button onclick="signup()">Sign Up</button>
+    <div id="authBlock" class="block">
+        <h3>Auth</h3>
+        <input id="username" placeholder="username" />
+        <input id="password" type="password" placeholder="password" />
+        <select id="role">
+            <option value="admin">admin</option>
+            <option value="manager">manager</option>
+            <option value="viewer">viewer</option>
+            <option value="auditor">auditor</option>
+        </select>
+        <br /><br />
+        <button onclick="signup()">Sign up</button>
         <button onclick="login()">Login</button>
     </div>
 
-    <!-- ================= MAIN ================= -->
+    <div id="createItemBlock" class="block hidden">
+        <h3>Create Item</h3>
+        <input id="c_title" placeholder="title" />
+        <input id="c_desc" placeholder="description" />
+        <input id="c_price" type="number" placeholder="price" />
+        <input id="c_amount" type="number" placeholder="amount" />
+        <label><input id="c_visible" type="checkbox" /> visible</label>
+        <br /><br />
+        <button onclick="createItem()">Create</button>
+    </div>
 
-    <div id="main-block" class="hidden">
-        <div class="controls">
-            <span id="userinfo"></span>
-            <button onclick="logout()">Logout</button>
-        </div>
-
-        <!-- ===== CREATE ITEM ===== -->
-
-        <div id="create-item-block" class="hidden">
-            <h2>Create Item</h2>
-            <div class="controls">
-                <input id="ci-title" placeholder="title" />
-                <input id="ci-desc" placeholder="description" />
-                <input id="ci-price" placeholder="price" type="number" />
-                <input id="ci-amount" placeholder="amount" type="number" />
-                <label>
-                    visible <input id="ci-visible" type="checkbox" />
-                </label>
-                <button onclick="createItem()">Create</button>
-            </div>
-        </div>
-
-        <!-- ===== ITEMS LIST ===== -->
-
-        <h2>Items</h2>
-
-        <div class="controls">
-            <select id="items-order-by">
-                <option value="">order by</option>
-                <option value="id">id</option>
-                <option value="title">title</option>
-                <option value="price">price</option>
-                <option value="availability">availability</option>
-                <option value="visibility">visibility</option>
-            </select>
-
-            <label>ASC <input type="checkbox" id="items-asc"></label>
-            <label>DESC <input type="checkbox" id="items-desc"></label>
-
-            <input type="datetime-local" id="items-from">
-            <input type="datetime-local" id="items-to">
-
-            <input type="number" id="items-page" placeholder="page">
-            <input type="number" id="items-limit" placeholder="limit">
-
+    <div id="itemsBlock" class="block hidden">
+        <h3>Items</h3>
+        <div>
+            <input id="items_order" placeholder="order_by" />
+            <input id="items_from" placeholder="from (RFC3339)" />
+            <input id="items_to" placeholder="to (RFC3339)" />
             <button onclick="loadItems()">Load</button>
-            <button onclick="downloadItemsCSV()">Download CSV</button>
+            <button onclick="downloadItemsCSV()">CSV</button>
         </div>
+        <table id="itemsTable"></table>
+    </div>
 
-        <table id="items-table">
-            <thead>
-                <tr>
-                    <th>ID</th>
-                    <th>Title</th>
-                    <th>Description</th>
-                    <th>Price</th>
-                    <th>Visible</th>
-                    <th>Amount</th>
-                    <th>Created</th>
-                    <th>Updated</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody></tbody>
-        </table>
-
-        <!-- ===== HISTORY (ADMIN + AUDITOR) ===== -->
-
-        <div id="history-block" class="hidden">
-            <h2>Items History</h2>
-
-            <div class="controls">
-                <select id="history-order-by">
-                    <option value="">order by</option>
-                    <option value="id">id</option>
-                    <option value="action">action</option>
-                    <option value="version">version</option>
-                    <option value="actor">actor</option>
-                </select>
-
-                <label>ASC <input type="checkbox" id="history-asc"></label>
-                <label>DESC <input type="checkbox" id="history-desc"></label>
-
-                <input type="datetime-local" id="history-from">
-                <input type="datetime-local" id="history-to">
-
-                <input type="number" id="history-page" placeholder="page">
-                <input type="number" id="history-limit" placeholder="limit">
-
-                <button onclick="loadHistory()">Load</button>
-                <button onclick="downloadHistoryCSV()">Download CSV</button>
-            </div>
-
-            <table id="history-table">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>ItemID</th>
-                        <th>Version</th>
-                        <th>Action</th>
-                        <th>Actor</th>
-                        <th>ChangedAt</th>
-                    </tr>
-                </thead>
-                <tbody></tbody>
-            </table>
+    <div id="historyBlock" class="block hidden">
+        <h3>History</h3>
+        <div>
+            <input id="hist_order" placeholder="order_by" />
+            <input id="hist_from" placeholder="from (RFC3339)" />
+            <input id="hist_to" placeholder="to (RFC3339)" />
+            <button onclick="loadHistory()">Load</button>
+            <button onclick="downloadHistoryCSV()">CSV</button>
         </div>
+        <table id="historyTable"></table>
     </div>
 
     <script>
-        /* ================= HELPERS ================= */
-
-        function getToken() {
-            return localStorage.getItem("jwt");
-        }
-
-        function setToken(token) {
-            localStorage.setItem("jwt", token);
-        }
-
-        function authHeaders() {
-            return {
-                "Authorization": "Bearer " + getToken(),
-                "Content-Type": "application/json"
-            };
-        }
-
-        function parseJWT(token) {
-            const payload = token.split(".")[1];
-            return JSON.parse(atob(payload));
-        }
-
-        function qs(params) {
-            const q = new URLSearchParams();
-            Object.entries(params).forEach(([k, v]) => {
-                if (v !== null && v !== "" && v !== undefined) {
-                    q.append(k, v);
-                }
-            });
-            return q.toString();
-        }
-
-        /* ================= AUTH ================= */
+        let currentRole = null;
 
         async function signup() {
-            await auth("/auth/signup");
+            await fetch('/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(getAuthPayload()) });
+            onAuthSuccess();
         }
-
         async function login() {
-            await auth("/auth/login");
+            await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(getAuthPayload()) });
+            onAuthSuccess();
         }
+        function getAuthPayload() {
+            return { username: username.value, password: password.value, role: role.value };
+        }
+        function onAuthSuccess() {
+            currentRole = role.value;
+            authBlock.classList.add('hidden');
+            logoutBtn.classList.remove('hidden');
+            itemsBlock.classList.remove('hidden');
+            if (currentRole === 'admin' || currentRole === 'manager') createItemBlock.classList.remove('hidden');
+            if (currentRole === 'admin' || currentRole === 'auditor') historyBlock.classList.remove('hidden');
+            loadItems();
+        }
+        logoutBtn.onclick = () => location.reload();
 
-        async function auth(url) {
-            const res = await fetch(url, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                    username: authusername.value,
-                    password: authpassword.value,
-                    role: authrole.value
+        async function createItem() {
+            await fetch('/items', {
+                method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+                    title: c_title.value, description: c_desc.value, price: +c_price.value, available_amount: +c_amount.value, visible: c_visible.checked
                 })
             });
-
-            if (!res.ok) {
-                alert("auth failed");
-                return;
-            }
-
-            const data = await res.json();
-            setToken(data.token);
-            init();
-        }
-
-        function logout() {
-            localStorage.removeItem("jwt");
-            location.reload();
-        }
-
-        /* ================= INIT ================= */
-
-        function init() {
-            const token = getToken();
-            if (!token) return;
-
-            const user = parseJWT(token);
-
-            auth - block.classList.add("hidden");
-            main - block.classList.remove("hidden");
-
-            userinfo.textContent = `User: ${user.username}, role: ${user.role}`;
-
-            if (user.role === "admin" || user.role === "manager") {
-                create - item - block.classList.remove("hidden");
-            }
-
-            if (user.role === "admin" || user.role === "auditor") {
-                history - block.classList.remove("hidden");
-            }
-
             loadItems();
-            if (!history - block.classList.contains("hidden")) {
-                loadHistory();
-            }
         }
-
-        /* ================= ITEMS ================= */
 
         async function loadItems() {
-            const query = qs({
-                order_by: items - order - by.value,
-                asc: items - asc.checked,
-                desc: items - desc.checked,
-                from: items - from.value,
-                to: items - to.value,
-                page: items - page.value,
-                limit: items - limit.value
-            });
-
-            const res = await fetch("/items?" + query, { headers: authHeaders() });
-            const items = await res.json();
-
-            const tbody = items - table.querySelector("tbody");
-            tbody.innerHTML = "";
-
-            items.forEach(i => {
-                const tr = document.createElement("tr");
-
-                tr.innerHTML = `
-      <td>${i.id}</td>
-      <td contenteditable="false">${i.title}</td>
-      <td contenteditable="false">${i.description || ""}</td>
-      <td contenteditable="false">${i.price}</td>
-      <td contenteditable="false">${i.visible}</td>
-      <td contenteditable="false">${i.available_amount}</td>
-      <td>${i.created_at}</td>
-      <td>${i.updated_at}</td>
-      <td class="actions"></td>
-    `;
-
-                renderActions(tr, i);
-                tbody.appendChild(tr);
-            });
+            const qs = new URLSearchParams();
+            if (items_order.value) qs.append('order_by', items_order.value);
+            if (items_from.value) qs.append('from', items_from.value);
+            if (items_to.value) qs.append('to', items_to.value);
+            const res = await fetch('/items?' + qs);
+            const data = await res.json();
+            renderItems(data);
         }
 
-        function renderActions(tr, item) {
-            const user = parseJWT(getToken());
-            const cell = tr.querySelector(".actions");
-
-            if (user.role === "admin" || user.role === "manager") {
-                const edit = document.createElement("button");
-                edit.textContent = "Edit";
-                edit.onclick = () => toggleEdit(tr, item.id, edit);
-                cell.appendChild(edit);
-
-                const del = document.createElement("button");
-                del.textContent = "Delete";
-                del.className = "danger";
-                del.onclick = () => deleteItem(item.id);
-                cell.appendChild(del);
-            }
-
-            if (user.role === "admin" || user.role === "auditor") {
-                const hist = document.createElement("button");
-                hist.textContent = "History CSV";
-                hist.onclick = () => window.location = `/items/${item.id}/history/csv`;
-                cell.appendChild(hist);
-            }
+        function renderItems(items) {
+            itemsTable.innerHTML = '<tr><th>ID</th><th>Title</th><th>Price</th><th>Amount</th><th>Visible</th><th>Actions</th></tr>';
+            items.forEach(it => {
+                const tr = document.createElement('tr');
+                tr.innerHTML = `<td>${it.id}</td><td contenteditable="false">${it.title}</td><td contenteditable="false">${it.price}</td><td contenteditable="false">${it.available_amount}</td><td>${it.visible}</td>`;
+                const act = document.createElement('td'); act.className = 'actions';
+                if (currentRole !== 'viewer' && currentRole !== 'auditor') {
+                    const edit = document.createElement('button'); edit.textContent = 'Edit';
+                    edit.onclick = () => toggleEdit(tr, it.id, edit);
+                    act.appendChild(edit);
+                }
+                if (currentRole === 'admin' || currentRole === 'manager') {
+                    const del = document.createElement('button'); del.textContent = 'Delete'; del.onclick = () => deleteItem(it.id);
+                    act.appendChild(del);
+                }
+                if (currentRole === 'admin' || currentRole === 'auditor') {
+                    const h = document.createElement('button'); h.textContent = 'History CSV'; h.onclick = () => window.open(`/items/${it.id}/history/csv`);
+                    act.appendChild(h);
+                }
+                tr.appendChild(act); itemsTable.appendChild(tr);
+            });
         }
 
         async function toggleEdit(tr, id, btn) {
-            const editable = btn.textContent === "Edit";
-            btn.textContent = editable ? "Save" : "Edit";
-
-            const tds = tr.querySelectorAll("td");
-            [1, 2, 3, 4, 5].forEach(i => tds[i].contentEditable = editable);
-
-            if (!editable) {
-                const body = {
-                    title: tds[1].textContent,
-                    description: tds[2].textContent,
-                    price: Number(tds[3].textContent),
-                    visible: tds[4].textContent === "true",
-                    available_amount: Number(tds[5].textContent)
-                };
-
-                await fetch(`/items/${id}`, {
-                    method: "PATCH",
-                    headers: authHeaders(),
-                    body: JSON.stringify(body)
+            const editing = btn.textContent === 'Save';
+            const tds = tr.querySelectorAll('td');
+            if (editing) {
+                await fetch('/items/' + id, {
+                    method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
+                        title: tds[1].innerText, price: +tds[2].innerText, available_amount: +tds[3].innerText
+                    })
                 });
-
-                loadItems();
+                btn.textContent = 'Edit'; loadItems();
+            } else {
+                tds[1].contentEditable = tds[2].contentEditable = tds[3].contentEditable = true;
+                btn.textContent = 'Save';
             }
         }
-
-        async function deleteItem(id) {
-            await fetch(`/items/${id}`, {
-                method: "DELETE",
-                headers: authHeaders()
-            });
-            loadItems();
-        }
-
-        /* ================= CREATE ================= */
-
-        async function createItem() {
-            await fetch("/items", {
-                method: "POST",
-                headers: authHeaders(),
-                body: JSON.stringify({
-                    title: ci - title.value,
-                    description: ci - desc.value,
-                    price: Number(ci - price.value),
-                    available_amount: Number(ci - amount.value),
-                    visible: ci - visible.checked
-                })
-            });
-
-            loadItems();
-        }
-
-        /* ================= CSV ================= */
-
-        function downloadItemsCSV() {
-            const query = qs({
-                order_by: items - order - by.value,
-                asc: items - asc.checked,
-                desc: items - desc.checked,
-                from: items - from.value,
-                to: items - to.value,
-                page: items - page.value,
-                limit: items - limit.value
-            });
-
-            window.location = "/items/csv?" + query;
-        }
-
-        /* ================= HISTORY ================= */
+        async function deleteItem(id) { await fetch('/items/' + id, { method: 'DELETE' }); loadItems(); }
 
         async function loadHistory() {
-            const query = qs({
-                order_by: history - order - by.value,
-                asc: history - asc.checked,
-                desc: history - desc.checked,
-                from: history - from.value,
-                to: history - to.value,
-                page: history - page.value,
-                limit: history - limit.value
-            });
-
-            const res = await fetch("/items/history?" + query, {
-                headers: authHeaders()
-            });
-
-            const data = await res.json();
-            const tbody = history - table.querySelector("tbody");
-            tbody.innerHTML = "";
-
+            const qs = new URLSearchParams();
+            if (hist_order.value) qs.append('order_by', hist_order.value);
+            if (hist_from.value) qs.append('from', hist_from.value);
+            if (hist_to.value) qs.append('to', hist_to.value);
+            const res = await fetch('/items/history?' + qs); const data = await res.json();
+            historyTable.innerHTML = '<tr><th>ID</th><th>ItemID</th><th>Action</th><th>Actor</th><th>Time</th></tr>';
             data.forEach(h => {
-                const tr = document.createElement("tr");
-                tr.innerHTML = `
-      <td>${h.id}</td>
-      <td>${h.item_id}</td>
-      <td>${h.version}</td>
-      <td>${h.action}</td>
-      <td>${h.changed_by}</td>
-      <td>${h.changed_at}</td>
-    `;
-                tbody.appendChild(tr);
+                historyTable.innerHTML += `<tr><td>${h.id}</td><td>${h.item_id}</td><td>${h.action}</td><td>${h.changed_by}</td><td>${h.changed_at}</td></tr>`;
             });
         }
-
-        function downloadHistoryCSV() {
-            const query = qs({
-                order_by: history - order - by.value,
-                asc: history - asc.checked,
-                desc: history - desc.checked,
-                from: history - from.value,
-                to: history - to.value,
-                page: history - page.value,
-                limit: history - limit.value
-            });
-
-            window.location = "/items/history/csv?" + query;
-        }
-
-        /* ================= START ================= */
-
-        init();
+        function downloadItemsCSV() { window.open('/items/csv'); }
+        function downloadHistoryCSV() { window.open('/items/history/csv'); }
     </script>
-
 </body>
 
 </html>

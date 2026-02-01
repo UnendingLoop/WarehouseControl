@@ -119,7 +119,7 @@ func (pr PostgresRepo) UpdateItem(ctx context.Context, uItem *model.ItemUpdate, 
 
 func (pr PostgresRepo) GetItemByID(ctx context.Context, itemID int, canSeeDeleted bool) (*model.Item, error) { // select FOR UPDATE
 	query := `SELECT id, title, description, price, visible, available_amount, created_at, updated_at, deleted_at 
-	FROM events 
+	FROM items 
 	WHERE id = $1`
 
 	// если нет доступа на просмотр удаленных - добавляем это в квери
@@ -151,7 +151,7 @@ func (pr PostgresRepo) GetItemByID(ctx context.Context, itemID int, canSeeDelete
 
 func (pr PostgresRepo) GetItemsList(ctx context.Context, rpi *model.RequestParam, canSeeDeleted bool) ([]*model.Item, error) {
 	query := `SELECT id, title, description, price, visible, available_amount, created_at, updated_at, deleted_at 
-	FROM events`
+	FROM items`
 	// добавляем сортировку по полю
 	orderExpr, err := defineOrderExpr(rpi.OrderBy, rpi.ASC, rpi.DESC)
 	if err != nil {

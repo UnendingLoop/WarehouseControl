@@ -59,7 +59,7 @@ func main() {
 
 	items := engine.Group("/items", mwauthlog.RequireAuth([]byte(appConfig.GetString("SECRET"))))
 	items.POST("", handlers.CreateItem)                    // создание Item
-	items.PATCH("/:id", handlers.GetItemByID)              // обновление Item по ID
+	items.PATCH("/:id", handlers.UpdateItem)               // обновление Item по ID
 	items.GET("/:id", handlers.GetItemByID)                // получение Item по ID
 	items.GET("/:id/history", handlers.GetItemHistoryByID) // получение History товара по его ID
 	items.DELETE("/:id", handlers.DeleteItem)              // удаление Item по ID
