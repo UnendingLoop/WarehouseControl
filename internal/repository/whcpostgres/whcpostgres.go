@@ -177,8 +177,6 @@ func (pr PostgresRepo) GetItemsList(ctx context.Context, rpi *model.RequestParam
 	// собираем конечный квери
 	query = query + periodExpr + orderExpr + limofExpr
 
-	log.Printf("GetItemsList query(canSeeDeleted=%v): %q", canSeeDeleted, query)
-
 	// выполняем запрос
 	rows, err := pr.DB.QueryContext(ctx, query)
 	if err != nil {
@@ -237,7 +235,7 @@ func (pr PostgresRepo) GetItemHistoryByID(ctx context.Context, rph *model.Reques
 	query = query + orderExpr + periodExpr + limofExpr
 
 	// выполняем запрос
-	rows, err := pr.DB.QueryContext(ctx, query)
+	rows, err := pr.DB.QueryContext(ctx, query, itemID)
 	if err != nil {
 		switch {
 		case errors.Is(err, sql.ErrNoRows):
