@@ -4,7 +4,12 @@ CREATE TABLE users (
     username TEXT UNIQUE NOT NULL,
     pass_hash TEXT NOT NULL,
     role TEXT NOT NULL CHECK (
-        role IN ('admin', 'manager', 'viewer')
+        role IN (
+            'admin',
+            'manager',
+            'viewer',
+            'auditor'
+        )
     ),
     created_at TIMESTAMP NOT NULL DEFAULT now()
 );
