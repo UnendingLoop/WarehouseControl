@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"time"
 
+	"github.com/UnendingLoop/WarehouseControl/internal/model"
 	"github.com/gin-gonic/gin"
 	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
@@ -74,35 +75,17 @@ func RequireAuth(secret []byte) gin.HandlerFunc {
 
 		claims := token.Claims.(*Claims)
 
-		// прокидываем дальше
+		// проверяем корректность роли - принадлежит ли она списку ролей приложения
+		_, ok := model.RolesMap[claims.Role]
+		if !ok {
+			c.AbortWithStatus(http.StatusUnauthorized)
+			return
+		}
+
+		// прокидываем дальше в контекст
 		c.Set("user_id", claims.UserID)
 		c.Set("role", claims.Role)
 		c.Set("username", claims.Username)
-
-		c.Next()
-	}
-}
-
-func RequireRoles(roles ...string) gin.HandlerFunc {
-	return func(c *gin.Context) {
-		r, exists := c.Get("role")
-		if !exists {
-			c.AbortWithStatus(http.StatusForbidden)
-			return
-		}
-
-		found := false
-		for _, v := range roles {
-			if r == v {
-				found = true
-				break
-			}
-		}
-
-		if !found {
-			c.AbortWithStatus(http.StatusForbidden)
-			return
-		}
 
 		c.Next()
 	}
