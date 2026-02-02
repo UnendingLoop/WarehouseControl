@@ -397,6 +397,12 @@ func convertHistoryToCSV(ctx context.Context, input []*model.ItemHistory) ([][]s
 			return nil, ctx.Err()
 		default:
 			row := make([]string, 0, len(start))
+
+			oldData := ""
+			if v.OldData != nil {
+				oldData = string(*v.OldData)
+			}
+
 			row = append(row,
 				strconv.Itoa(v.ID),
 				strconv.Itoa(v.ItemID),
@@ -404,7 +410,7 @@ func convertHistoryToCSV(ctx context.Context, input []*model.ItemHistory) ([][]s
 				v.Action,
 				v.ChangedAt.Format("2006-01-02 15:04:05"),
 				v.ChangedBy,
-				string(*v.OldData),
+				oldData,
 				string(v.NewData))
 			result = append(result, row)
 		}
@@ -427,6 +433,12 @@ func convertItemsToCSV(ctx context.Context, input []*model.Item) ([][]string, er
 			if v.Visible {
 				vis = "true"
 			}
+
+			deletedAt := ""
+			if v.DeletedAt != nil {
+				deletedAt = v.DeletedAt.Format("2006-01-02 15:04:05")
+			}
+
 			row = append(row,
 				strconv.Itoa(v.ID),
 				v.Title,
@@ -436,7 +448,7 @@ func convertItemsToCSV(ctx context.Context, input []*model.Item) ([][]string, er
 				strconv.Itoa(v.AvailableAmount),
 				v.CreatedAt.Format("2006-01-02 15:04:05"),
 				v.UpdatedAt.Format("2006-01-02 15:04:05"),
-				v.DeletedAt.Format("2006-01-02 15:04:05"))
+				deletedAt)
 			result = append(result, row)
 		}
 	}
