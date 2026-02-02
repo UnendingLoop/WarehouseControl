@@ -119,11 +119,11 @@
         let currentRole = null;
 
         async function signup() {
-            await fetch('/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(getAuthPayload()) });
+            await apiFetch('/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(getAuthPayload()) });
             onAuthSuccess();
         }
         async function login() {
-            await fetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(getAuthPayload()) });
+            await apiFetch('/auth/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(getAuthPayload()) });
             onAuthSuccess();
         }
         function getAuthPayload() {
@@ -151,16 +151,17 @@
             historyBlock.classList.add('hidden');
             createItemBlock.classList.add('hidden');
             logoutBtn.classList.add('hidden');
-            roleInfo.classList.add('hidden');
 
+            roleInfo.classList.add('hidden');
             roleInfo.innerText = '';
 
             authBlock.classList.remove('hidden');
             location.reload()
+            alert('Session expired. Please login again.')
         }
 
         async function createItem() {
-            await fetch('/items', {
+            await apiFetch('/items', {
                 method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
                     title: c_title.value, description: c_desc.value, price: +c_price.value, available_amount: +c_amount.value, visible: c_visible.checked
                 })
@@ -169,14 +170,17 @@
         }
 
         async function loadItems() {
-            const qs = new URLSearchParams();
-            if (items_order.value) qs.append('order_by', items_order.value);
-            if (items_orderDir.value) qs.append(items_orderDir.value, "true");
-            if (items_from.value) qs.append('from', normalizeTime(items_from.value));
-            if (items_to.value) qs.append('to', normalizeTime(items_to.value));
-            const res = await fetch('/items?' + qs);
-            const data = await res.json();
-            renderItems(data);
+            try {
+                const qs = new URLSearchParams()
+                if (items_order.value) qs.append('order_by', items_order.value)
+                if (items_orderDir.value) qs.append(items_orderDir.value, "true")
+                if (items_from.value) qs.append('from', normalizeTime(items_from.value))
+                if (items_to.value) qs.append('to', normalizeTime(items_to.value))
+                const res = await apiFetch('/items?' + qs)
+                const data = await res.json()
+                renderItems(data)
+            } catch (e) {
+            }
         }
 
         function normalizeTime(val) {
@@ -184,6 +188,16 @@
             return val.length === 16 ? val + ':00Z' : val
         }
 
+        async function apiFetch(url, options = {}) {
+            const res = await fetch(url, options)
+
+            if (res.status === 401) {
+                handleUnauthorized()
+                throw new Error('Unauthorized')
+            }
+
+            return res
+        }
 
         function renderItems(items) {
             itemsTable.innerHTML = '<tr><th>ID</th><th>Title</th><th>Description</th><th>Price</th><th>Amount</th><th>Visible</th><th>Deleted</th><th>Actions</th></tr>';
@@ -212,7 +226,7 @@
             const editing = btn.textContent === 'Save';
             const tds = tr.querySelectorAll('td');
             if (editing) {
-                await fetch('/items/' + id, {
+                await apiFetch('/items/' + id, {
                     method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({
                         title: tds[1].innerText,
                         description: tds[2].innerText,
@@ -227,7 +241,7 @@
                 btn.textContent = 'Save';
             }
         }
-        async function deleteItem(id) { await fetch('/items/' + id, { method: 'DELETE' }); loadItems(); }
+        async function deleteItem(id) { await apiFetch('/items/' + id, { method: 'DELETE' }); loadItems(); }
 
         async function loadHistory() {
             const qs = new URLSearchParams();
@@ -235,7 +249,7 @@
             if (hist_orderDir.value) qs.append(hist_orderDir.value, "true");
             if (hist_from.value) qs.append('from', normalizeTime(hist_from.value));
             if (hist_to.value) qs.append('to', normalizeTime(hist_to.value));
-            const res = await fetch('/items/history?' + qs); const data = await res.json();
+            const res = await apiFetch('/items/history?' + qs); const data = await res.json();
             historyTable.innerHTML = '<tr><th>ID</th><th>ItemID</th><th>Action</th><th>Actor</th><th>Time</th></tr>';
             data.forEach(h => {
                 historyTable.innerHTML += `<tr><td>${h.id}</td><td>${h.item_id}</td><td>${h.action}</td><td>${h.changed_by}</td><td>${h.changed_at}</td></tr>`;
