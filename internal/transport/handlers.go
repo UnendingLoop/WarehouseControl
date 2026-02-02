@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/csv"
 	"errors"
+	"fmt"
 	"log"
 	"net/http"
 	"strconv"
@@ -273,7 +274,7 @@ func (whc *WHCHandlers) ExportItemsHistory(ctx *gin.Context) {
 	ctx.Writer.Header().Set("Pragma", "no-cache")
 	ctx.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Disposition")
 	ctx.Writer.Header().Set("Content-Type", "text/csv")
-	ctx.Writer.Header().Set("Content-Disposition", "attachment; filename=analytics.csv")
+	ctx.Writer.Header().Set("Content-Disposition", "attachment; filename=itemsHistory.csv")
 
 	// готовим и пишем данные
 	rows, err := convertHistoryToCSV(ctx.Request.Context(), res)
@@ -365,7 +366,7 @@ func (whc *WHCHandlers) ExportItemIDHistoryCSV(ctx *ginext.Context) {
 	ctx.Writer.Header().Set("Pragma", "no-cache")
 	ctx.Writer.Header().Set("Access-Control-Expose-Headers", "Content-Disposition")
 	ctx.Writer.Header().Set("Content-Type", "text/csv")
-	ctx.Writer.Header().Set("Content-Disposition", "attachment; filename=analytics.csv")
+	ctx.Writer.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=item%dHistory.csv", id))
 
 	// готовим и пишем данные
 	rows, err := convertHistoryToCSV(ctx.Request.Context(), res)
