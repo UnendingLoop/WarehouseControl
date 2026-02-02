@@ -69,14 +69,14 @@ var OrderByItemsMap = map[string]struct{}{
 // ========== История изменений ================
 
 type ItemHistory struct {
-	ID        int             `json:"id" db:"id"`
-	ItemID    int             `json:"item_id" db:"item_id"`
-	Version   int             `json:"version" db:"version"`
-	Action    string          `json:"action" db:"action"`
-	ChangedAt time.Time       `json:"changed_at" db:"changed_at"`
-	ChangedBy string          `json:"changed_by" db:"changed_by"`
-	OldData   json.RawMessage `json:"old" db:"old_data"`
-	NewData   json.RawMessage `json:"new" db:"new_data"`
+	ID        int              `json:"id" db:"id"`
+	ItemID    int              `json:"item_id" db:"item_id"`
+	Version   int              `json:"version" db:"version"`
+	Action    string           `json:"action" db:"action"`
+	ChangedAt time.Time        `json:"changed_at" db:"changed_at"`
+	ChangedBy string           `json:"changed_by" db:"changed_by"`
+	OldData   *json.RawMessage `json:"old" db:"old_data"`
+	NewData   json.RawMessage  `json:"new" db:"new_data"`
 }
 
 type RequestParam struct {

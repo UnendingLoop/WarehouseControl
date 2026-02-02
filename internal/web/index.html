@@ -75,9 +75,19 @@
     <div id="itemsBlock" class="block hidden">
         <h3>Items</h3>
         <div>
-            <input id="items_order" placeholder="order_by" />
-            <input id="items_from" placeholder="from (RFC3339)" />
-            <input id="items_to" placeholder="to (RFC3339)" />
+            Order by <select id="items_order">
+                <option value="id">id</option>
+                <option value="title">title</option>
+                <option value="price">price</option>
+                <option value="availability">amount</option>
+                <option value="visibility">visibility</option>
+            </select>
+            <select id="items_orderDir">
+                <option value="asc">ASC</option>
+                <option value="desc">DESC</option>
+            </select></br>
+            Item created from <input id="items_from" type="datetime-local" placeholder="from (RFC3339)" />
+            to <input id="items_to" type="datetime-local" placeholder="to (RFC3339)" />
             <button onclick="loadItems()">Load</button>
             <button onclick="downloadItemsCSV()">CSV</button>
         </div>
@@ -87,9 +97,18 @@
     <div id="historyBlock" class="block hidden">
         <h3>History</h3>
         <div>
-            <input id="hist_order" placeholder="order_by" />
-            <input id="hist_from" placeholder="from (RFC3339)" />
-            <input id="hist_to" placeholder="to (RFC3339)" />
+            Order by <select id="hist_order">
+                <option value="id">id</option>
+                <option value="action">action</option>
+                <option value="version">version</option>
+                <option value="actor">actor</option>
+            </select>
+            <select id="hist_orderDir">
+                <option value="asc">ASC</option>
+                <option value="desc">DESC</option>
+            </select></br>
+            Action from <input id="hist_from" type="datetime-local" />
+            to <input id="hist_to" type="datetime-local" />
             <button onclick="loadHistory()">Load</button>
             <button onclick="downloadHistoryCSV()">CSV</button>
         </div>
@@ -133,12 +152,19 @@
         async function loadItems() {
             const qs = new URLSearchParams();
             if (items_order.value) qs.append('order_by', items_order.value);
-            if (items_from.value) qs.append('from', items_from.value);
-            if (items_to.value) qs.append('to', items_to.value);
-            const res = await fetch('/items' + qs);
+            if (items_orderDir.value) qs.append(items_orderDir.value, "true");
+            if (items_from.value) qs.append('from', normalizeTime(items_from.value));
+            if (items_to.value) qs.append('to', normalizeTime(items_to.value));
+            const res = await fetch('/items?' + qs);
             const data = await res.json();
             renderItems(data);
         }
+
+        function normalizeTime(val) {
+            if (!val) return null
+            return val.length === 16 ? val + ':00Z' : val
+        }
+
 
         function renderItems(items) {
             itemsTable.innerHTML = '<tr><th>ID</th><th>Title</th><th>Description</th><th>Price</th><th>Amount</th><th>Visible</th><th>Actions</th></tr>';
@@ -187,8 +213,9 @@
         async function loadHistory() {
             const qs = new URLSearchParams();
             if (hist_order.value) qs.append('order_by', hist_order.value);
-            if (hist_from.value) qs.append('from', hist_from.value);
-            if (hist_to.value) qs.append('to', hist_to.value);
+            if (hist_orderDir.value) qs.append(hist_orderDir.value, "true");
+            if (hist_from.value) qs.append('from', normalizeTime(hist_from.value));
+            if (hist_to.value) qs.append('to', normalizeTime(hist_to.value));
             const res = await fetch('/items/history?' + qs); const data = await res.json();
             historyTable.innerHTML = '<tr><th>ID</th><th>ItemID</th><th>Action</th><th>Actor</th><th>Time</th></tr>';
             data.forEach(h => {

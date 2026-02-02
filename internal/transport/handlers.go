@@ -154,7 +154,7 @@ func (whc *WHCHandlers) UpdateItem(ctx *gin.Context) {
 		return
 	}
 
-	ctx.Status(http.StatusCreated)
+	ctx.Status(http.StatusNoContent)
 }
 
 func (whc *WHCHandlers) DeleteItem(ctx *gin.Context) {
@@ -404,7 +404,7 @@ func convertHistoryToCSV(ctx context.Context, input []*model.ItemHistory) ([][]s
 				v.Action,
 				v.ChangedAt.Format("2006-01-02 15:04:05"),
 				v.ChangedBy,
-				string(v.OldData),
+				string(*v.OldData),
 				string(v.NewData))
 			result = append(result, row)
 		}

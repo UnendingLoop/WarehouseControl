@@ -71,7 +71,7 @@ func (pr PostgresRepo) CreateItem(ctx context.Context, newItem *model.Item) erro
 }
 
 func (pr PostgresRepo) DeleteItem(ctx context.Context, itemID int) error {
-	query := `UPDATE items SET deleted_at = DEFAULT
+	query := `UPDATE items SET deleted_at = NOW()
 	WHERE id = $1`
 
 	res, err := pr.DB.ExecContext(ctx, query, itemID)
@@ -106,7 +106,7 @@ func (pr PostgresRepo) UpdateItem(ctx context.Context, uItem *model.ItemUpdate, 
 	// вставляем id первым аргументом
 	args := append([]any{uItem.ID}, values...)
 
-	log.Printf("Update-query: %q \nArguments: %v", query, args)
+	// log.Printf("Update-query: %q \nArguments: %v", query, args)
 
 	res, err := pr.DB.ExecContext(ctx, query, args...)
 	if err != nil {
@@ -166,7 +166,7 @@ func (pr PostgresRepo) GetItemsList(ctx context.Context, rpi *model.RequestParam
 	if !canSeeDeleted {
 		switch periodExpr {
 		case "":
-			periodExpr += `WHERE deleted_at = NULL `
+			periodExpr += ` WHERE deleted_at = NULL `
 		default:
 			periodExpr += ` AND deleted_at = NULL `
 		}
