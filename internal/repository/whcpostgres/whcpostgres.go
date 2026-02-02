@@ -100,7 +100,7 @@ func (pr PostgresRepo) UpdateItem(ctx context.Context, uItem *model.ItemUpdate, 
 
 	// если нет доступа на просмотр удаленных - добавляем это в квери
 	if !canSeeDeleted {
-		query += ` AND deleted_at = NULL`
+		query += ` AND deleted_at IS NULL`
 	}
 
 	// вставляем id первым аргументом
@@ -126,7 +126,7 @@ func (pr PostgresRepo) GetItemByID(ctx context.Context, itemID int, canSeeDelete
 
 	// если нет доступа на просмотр удаленных - добавляем это в квери
 	if !canSeeDeleted {
-		query += ` AND deleted_at = NULL`
+		query += ` AND deleted_at IS NULL`
 	}
 
 	var item model.Item
@@ -166,9 +166,9 @@ func (pr PostgresRepo) GetItemsList(ctx context.Context, rpi *model.RequestParam
 	if !canSeeDeleted {
 		switch periodExpr {
 		case "":
-			periodExpr += ` WHERE deleted_at = NULL `
+			periodExpr = ` WHERE deleted_at IS NULL `
 		default:
-			periodExpr += ` AND deleted_at = NULL `
+			periodExpr += ` AND deleted_at IS NULL `
 		}
 	}
 
@@ -176,6 +176,8 @@ func (pr PostgresRepo) GetItemsList(ctx context.Context, rpi *model.RequestParam
 
 	// собираем конечный квери
 	query = query + periodExpr + orderExpr + limofExpr
+
+	log.Printf("GetItemsList query(canSeeDeleted=%v): %q", canSeeDeleted, query)
 
 	// выполняем запрос
 	rows, err := pr.DB.QueryContext(ctx, query)

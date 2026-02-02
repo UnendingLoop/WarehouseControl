@@ -45,7 +45,7 @@
 <body>
     <h2>Items Service</h2>
     <button id="logoutBtn" class="hidden">Logout</button>
-
+    <div id="roleInfo" class="hidden"></div>
     <div id="authBlock" class="block">
         <h3>Auth</h3>
         <input id="username" placeholder="username" />
@@ -133,12 +133,31 @@
             currentRole = role.value;
             authBlock.classList.add('hidden');
             logoutBtn.classList.remove('hidden');
+
+            roleInfo.classList.remove('hidden');
+            roleInfo.innerText = `Current role: ${currentRole}`;
+
             itemsBlock.classList.remove('hidden');
             if (currentRole === 'admin' || currentRole === 'manager') createItemBlock.classList.remove('hidden');
             if (currentRole === 'admin' || currentRole === 'auditor') historyBlock.classList.remove('hidden');
             loadItems();
         }
-        logoutBtn.onclick = () => location.reload();
+        logoutBtn.onclick = () => handleUnauthorized();
+
+        function handleUnauthorized() {
+            currentRole = null;
+
+            itemsBlock.classList.add('hidden');
+            historyBlock.classList.add('hidden');
+            createItemBlock.classList.add('hidden');
+            logoutBtn.classList.add('hidden');
+            roleInfo.classList.add('hidden');
+
+            roleInfo.innerText = '';
+
+            authBlock.classList.remove('hidden');
+            location.reload()
+        }
 
         async function createItem() {
             await fetch('/items', {

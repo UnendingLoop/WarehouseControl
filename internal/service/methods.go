@@ -118,7 +118,7 @@ func (svc WHCService) CreateUser(ctx context.Context, user *model.User) (string,
 	err := svc.repo.CreateUser(ctx, user)
 	if err != nil {
 		switch {
-		case strings.Contains(err.Error(), "unique_violation"):
+		case strings.Contains(err.Error(), "unique violation"):
 			return "", model.ErrUserAlreadyExists
 		default:
 			log.Printf("RID %q Failed to put new user to DB in 'CreateUser': %q", rid, err)
