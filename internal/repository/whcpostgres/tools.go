@@ -22,6 +22,7 @@ func defineLimitOffsetExpr(lim, p *int) string {
 		page = *p
 	}
 
+	// работаем уже со значениями - если lim или p был nil, то значение 0
 	if limit <= 0 { // задаем значение по умолчанию если лимит пуст/некорректен
 		limit = 20
 	}
@@ -34,7 +35,7 @@ func defineLimitOffsetExpr(lim, p *int) string {
 		page = 1
 	}
 
-	// оба значения корректны - добавляем в квери
+	// оба значения теперь точно корректны - добавляем в квери
 	offset := limit * (page - 1)
 	return fmt.Sprintf("LIMIT %d OFFSET %d", limit, offset)
 }
@@ -42,6 +43,13 @@ func defineLimitOffsetExpr(lim, p *int) string {
 func defineOrderExpr(orderBy *string, asc, desc bool) (string, error) {
 	if orderBy == nil {
 		return "", nil
+	}
+
+	_, okItems := model.OrderByItemsMap[*orderBy]
+	_, okHistory := model.OrderByHistoryMap[*orderBy]
+
+	if !(okItems || okHistory) {
+		return "", model.ErrInvalidOrderBy
 	}
 
 	direction := ""
@@ -54,27 +62,7 @@ func defineOrderExpr(orderBy *string, asc, desc bool) (string, error) {
 		direction = "DESC"
 	}
 
-	switch *orderBy {
-	case model.ItemsOrderByID:
-		return fmt.Sprintf(" ORDER BY id %s ", direction), nil
-	case model.ItemsOrderByTitle:
-		return fmt.Sprintf(" ORDER BY title %s ", direction), nil
-	case model.ItemsOrderByPrice:
-		return fmt.Sprintf(" ORDER BY price %s ", direction), nil
-	case model.ItemsOrderByAvailability:
-		return fmt.Sprintf(" ORDER BY available_amount %s ", direction), nil
-	case model.ItemsOrderByVisibility:
-		return fmt.Sprintf(" ORDER BY visible %s ", direction), nil
-
-	case model.HistoryOrderByAction:
-		return fmt.Sprintf(" ORDER BY action %s ", direction), nil
-	case model.HistoryOrderByVersion:
-		return fmt.Sprintf(" ORDER BY version %s ", direction), nil
-	case model.HistoryOrderByActor:
-		return fmt.Sprintf(" ORDER BY changed_by %s ", direction), nil
-	default:
-		return "", model.ErrInvalidOrderBy
-	}
+	return fmt.Sprintf(" ORDER BY %s %s ", *orderBy, direction), nil
 }
 
 func definePeriodExpr(start, end *time.Time, leadOp string, dbField string) string {

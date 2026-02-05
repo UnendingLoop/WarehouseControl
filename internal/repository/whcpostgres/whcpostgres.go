@@ -119,7 +119,7 @@ func (pr PostgresRepo) UpdateItem(ctx context.Context, uItem *model.ItemUpdate, 
 	return nil
 }
 
-func (pr PostgresRepo) GetItemByID(ctx context.Context, itemID int, canSeeDeleted bool) (*model.Item, error) { // select FOR UPDATE
+func (pr PostgresRepo) GetItemByID(ctx context.Context, itemID int, canSeeDeleted bool) (*model.Item, error) {
 	query := `SELECT id, title, description, price, visible, available_amount, created_at, updated_at, deleted_at 
 	FROM items 
 	WHERE id = $1`
@@ -237,12 +237,7 @@ func (pr PostgresRepo) GetItemHistoryByID(ctx context.Context, rph *model.Reques
 	// выполняем запрос
 	rows, err := pr.DB.QueryContext(ctx, query, itemID)
 	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
-			return nil, model.ErrUserNotFound
-		default:
-			return nil, err // 500
-		}
+		return nil, err
 	}
 
 	defer func() {
@@ -297,12 +292,7 @@ func (pr PostgresRepo) GetItemHistoryAll(ctx context.Context, rph *model.Request
 	// выполняем запрос
 	rows, err := pr.DB.QueryContext(ctx, query)
 	if err != nil {
-		switch {
-		case errors.Is(err, sql.ErrNoRows):
-			return nil, model.ErrUserNotFound
-		default:
-			return nil, err // 500
-		}
+		return nil, err
 	}
 
 	defer func() {
