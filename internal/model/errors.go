@@ -16,6 +16,7 @@ var (
 	ErrInvalidStartEndTime = errors.New("invalid start/end time provided: start cannot be later than end")
 	ErrInvalidPage         = errors.New("invalid page value provided: value must be > 0")
 	ErrInvalidLimit        = errors.New("invalid limit value provided: value must be > 0 and < 1000")
+	ErrInvalidRequestParam = errors.New("invalid request parameter provided")
 
 	ErrIncorrectItemID   = errors.New("incorrect item id provided")
 	ErrIncorrectUserName = errors.New("incorrect username provided")
@@ -23,6 +24,7 @@ var (
 	ErrEmptyItemInfo     = errors.New("incomplete data provided to create item")
 	ErrEmptyTitle        = errors.New("invalid item title provided")
 	ErrInvalidPrice      = errors.New("invalid item price provided")
+	ErrEmptyUser         = errors.New("empty user-info provided")
 	ErrInvalidAvail      = errors.New("invalid item available amount provided")
 	ErrNoFieldsToUpdate  = errors.New("nothing to update in item")
 

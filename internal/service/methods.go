@@ -83,10 +83,10 @@ func (svc WHCService) UpdateItemByID(ctx context.Context, item *model.ItemUpdate
 	return nil
 }
 
-func (svc WHCService) DeleteItemByID(ctx context.Context, id int, role, username string) error {
+func (svc WHCService) DeleteItemByID(ctx context.Context, itemID int, role, username string) error {
 	rid := model.RequestIDFromCtx(ctx)
 
-	if id <= 0 {
+	if itemID <= 0 {
 		return model.ErrIncorrectItemID
 	}
 
@@ -94,9 +94,9 @@ func (svc WHCService) DeleteItemByID(ctx context.Context, id int, role, username
 		return model.ErrAccessDenied
 	}
 
-	if err := svc.repo.DeleteItem(ctx, id); err != nil {
+	if err := svc.repo.DeleteItem(ctx, itemID, username); err != nil {
 		switch {
-		case errors.Is(err, model.ErrUserNotFound):
+		case errors.Is(err, model.ErrItemNotFound):
 			return err
 		default:
 			log.Printf("RID %q Failed to delete item in DB in 'DeleteItemByID': %q", rid, err)
@@ -110,8 +110,13 @@ func (svc WHCService) CreateUser(ctx context.Context, user *model.User) (string,
 	rid := model.RequestIDFromCtx(ctx)
 
 	// валидируем инфу о пользователе
-	if err := validateNormalizeUser(user); err != nil {
+	if err := validateNormalizeNewUser(user); err != nil {
 		return "", err
+	}
+
+	// Проверка роли
+	if !svc.policy.IsCorrectRole(user.Role) {
+		return "", model.ErrIncorrectUserRole
 	}
 
 	// создаем его в бд
@@ -139,7 +144,7 @@ func (svc WHCService) LoginUser(ctx context.Context, username string, password s
 	rid := model.RequestIDFromCtx(ctx)
 
 	// получаем инфу о пользователе из БД
-	user, err := svc.repo.GetUserByName(ctx, username)
+	user, err := svc.repo.GetUserByName(ctx, strings.ToLower(username))
 	if err != nil {
 		switch {
 		case errors.Is(err, model.ErrUserNotFound):

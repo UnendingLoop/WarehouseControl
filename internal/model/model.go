@@ -32,7 +32,7 @@ type Item struct {
 	ID              int        `json:"id" db:"id"`
 	Title           string     `json:"title" db:"title"`
 	Description     string     `json:"description,omitempty" db:"description"`
-	Price           int64      `json:"price" db:"price"`
+	Price           int64      `json:"price" db:"price"` // цена в копейках
 	Visible         bool       `json:"visible" db:"visible"`
 	AvailableAmount int        `json:"available_amount" db:"available_amount"`
 	CreatedAt       time.Time  `json:"created_at" db:"created_at"`

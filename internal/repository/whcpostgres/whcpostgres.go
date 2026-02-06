@@ -70,11 +70,11 @@ func (pr PostgresRepo) CreateItem(ctx context.Context, newItem *model.Item) erro
 	return nil
 }
 
-func (pr PostgresRepo) DeleteItem(ctx context.Context, itemID int) error {
-	query := `UPDATE items SET deleted_at = NOW()
-	WHERE id = $1`
+func (pr PostgresRepo) DeleteItem(ctx context.Context, itemID int, username string) error {
+	query := `UPDATE items SET deleted_at = NOW(), updated_by = $1
+	WHERE id = $2`
 
-	res, err := pr.DB.ExecContext(ctx, query, itemID)
+	res, err := pr.DB.ExecContext(ctx, query, itemID, username)
 	if err != nil {
 		return err // 500
 	}

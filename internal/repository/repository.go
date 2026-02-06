@@ -22,7 +22,7 @@ type WHCRepo interface {
 	GetUserByName(ctx context.Context, user string) (*model.User, error)
 
 	CreateItem(ctx context.Context, newItem *model.Item) error
-	DeleteItem(ctx context.Context, itemID int) error
+	DeleteItem(ctx context.Context, itemID int, username string) error
 	UpdateItem(ctx context.Context, uItem *model.ItemUpdate, showDeleted bool) error
 
 	GetItemByID(ctx context.Context, itemID int, showDeleted bool) (*model.Item, error)

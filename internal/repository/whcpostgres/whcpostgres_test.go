@@ -240,28 +240,32 @@ func TestDeleteItem(t *testing.T) {
 
 	cases := []struct {
 		name         string
-		arg          int
+		itemID       int
+		username     string
 		mockErr      error
 		wantErr      error
 		mockAffected int
 	}{
 		{
 			name:         "Positive case - item soft-deleted",
-			arg:          5,
+			itemID:       5,
+			username:     "someNAme",
 			mockErr:      nil,
 			wantErr:      nil,
 			mockAffected: 1,
 		},
 		{
 			name:         "Negative case - item not found",
-			arg:          5,
+			itemID:       5,
+			username:     "someNAme",
 			mockErr:      nil,
 			wantErr:      model.ErrItemNotFound,
 			mockAffected: 0,
 		},
 		{
 			name:         "Negative case - some DB error",
-			arg:          5,
+			itemID:       5,
+			username:     "someNAme",
 			mockErr:      someErr,
 			wantErr:      someErr,
 			mockAffected: 0,
@@ -271,7 +275,7 @@ func TestDeleteItem(t *testing.T) {
 	for _, tt := range cases {
 		t.Run(tt.name, func(t *testing.T) {
 			exp := mock.ExpectExec(`UPDATE items SET deleted_at`).
-				WithArgs(tt.arg)
+				WithArgs(tt.itemID, tt.username)
 
 			if tt.mockErr != nil {
 				exp.WillReturnError(tt.mockErr)
@@ -279,7 +283,7 @@ func TestDeleteItem(t *testing.T) {
 				exp.WillReturnResult(sqlmock.NewResult(0, int64(tt.mockAffected)))
 			}
 
-			err := repo.DeleteItem(context.Background(), tt.arg)
+			err := repo.DeleteItem(context.Background(), tt.itemID, tt.username)
 
 			require.ErrorIs(t, err, tt.wantErr)
 		})

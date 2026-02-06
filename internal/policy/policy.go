@@ -40,3 +40,8 @@ func (pc PolicyChecker) AccessToSeeDeleted(role string) bool {
 	}
 	return false
 }
+
+func (pc PolicyChecker) IsCorrectRole(role string) bool {
+	_, exists := model.RolesMap[role]
+	return exists
+}
