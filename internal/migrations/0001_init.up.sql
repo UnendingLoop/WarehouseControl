@@ -31,10 +31,15 @@ CREATE TABLE items (
 -- ===== ITEMS HISTORY =====
 CREATE TABLE items_history (
     id SERIAL PRIMARY KEY,
-    item_id INT NOT NULL REFERENCES items (id) ON DELETE CASCADE,
+    item_id INT NOT NULL,
     version INT NOT NULL,
     action TEXT NOT NULL CHECK (
-        action IN ('INSERT', 'UPDATE', 'DELETE')
+        action IN (
+            'INSERT',
+            'UPDATE',
+            'SOFT DELETE',
+            'COMPLETE DELETE'
+        )
     ),
     changed_at TIMESTAMP NOT NULL DEFAULT now(),
     changed_by TEXT,
@@ -55,6 +60,7 @@ CREATE OR REPLACE FUNCTION log_item_changes()
 RETURNS TRIGGER AS $$
 DECLARE
     next_version INT;
+    action_type TEXT;
 BEGIN
     SELECT COALESCE(MAX(version), 0) + 1
     INTO next_version
@@ -67,13 +73,18 @@ BEGIN
         RETURN NEW;
 
     ELSIF TG_OP = 'UPDATE' THEN
+        IF OLD.deleted_at IS NULL AND NEW.deleted_at IS NOT NULL THEN
+        action_type := 'SOFT DELETE';
+        ELSE
+        action_type := 'UPDATE';
+        END IF;
         INSERT INTO items_history(item_id, version, action, old_data, new_data, changed_by)
-        VALUES (NEW.id, next_version, 'UPDATE', to_jsonb(OLD), to_jsonb(NEW), NEW.updated_by);
+        VALUES (NEW.id, next_version, action_type, to_jsonb(OLD), to_jsonb(NEW), NEW.updated_by);
         RETURN NEW;
 
     ELSIF TG_OP = 'DELETE' THEN
         INSERT INTO items_history(item_id, version, action, old_data, new_data, changed_by)
-        VALUES (OLD.id, next_version, 'DELETE', to_jsonb(OLD), NULL, OLD.updated_by);
+        VALUES (OLD.id, next_version, 'COMPLETE DELETE', to_jsonb(OLD), NULL, OLD.updated_by);
         RETURN OLD;
     END IF;
 END;

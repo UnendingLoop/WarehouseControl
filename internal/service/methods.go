@@ -43,13 +43,8 @@ func (svc WHCService) GetItemByID(ctx context.Context, id int, role string) (*mo
 
 	res, err := svc.repo.GetItemByID(ctx, id, svc.policy.AccessToSeeDeleted(role))
 	if err != nil {
-		switch {
-		case errors.Is(err, model.ErrUserNotFound):
-			return nil, err
-		default:
-			log.Printf("RID %q Failed to get item from DB in 'GetItemByID': %q", rid, err)
-			return nil, model.ErrCommon500
-		}
+		log.Printf("RID %q Failed to get item from DB in 'GetItemByID': %q", rid, err)
+		return nil, model.ErrCommon500
 	}
 
 	return res, nil
@@ -143,6 +138,10 @@ func (svc WHCService) CreateUser(ctx context.Context, user *model.User) (string,
 func (svc WHCService) LoginUser(ctx context.Context, username string, password string, role string) (string, *model.User, error) {
 	rid := model.RequestIDFromCtx(ctx)
 
+	if !svc.policy.IsCorrectRole(role) {
+		return "", nil, model.ErrIncorrectUserRole
+	}
+
 	// получаем инфу о пользователе из БД
 	user, err := svc.repo.GetUserByName(ctx, strings.ToLower(username))
 	if err != nil {
@@ -208,6 +207,10 @@ func (svc WHCService) GetItemHistoryByID(ctx context.Context, rph *model.Request
 	if err != nil {
 		log.Printf("RID %q Failed to get item history from DB in 'GetItemHistoryByID': %q", rid, err)
 		return nil, model.ErrCommon500
+	}
+
+	if len(res) == 0 {
+		return nil, model.ErrItemNotFound
 	}
 
 	return res, nil

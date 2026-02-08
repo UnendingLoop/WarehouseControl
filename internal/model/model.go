@@ -10,11 +10,11 @@ import (
 //================ Пользователь и роли ========================
 
 type User struct {
-	ID        int       `json:"id,omitempty" db:"id"`
-	UserName  string    `json:"username" db:"username"`
-	Role      string    `json:"role" db:"role"`
-	PassHash  string    `json:"password" db:"pass_hash"`
-	CreatedAt time.Time `json:"created_at" db:"created_at"`
+	ID        int        `json:"id,omitempty" db:"id"`
+	UserName  string     `json:"username" binding:"required" db:"username"`
+	Role      string     `json:"role" binding:"required" db:"role"`
+	PassHash  string     `json:"password" binding:"required" db:"pass_hash"` // используется как хранилище открытого пароля при регистрации, и как хранилище Hash после
+	CreatedAt *time.Time `json:"created_at,omitempty" db:"created_at"`
 }
 
 const (
@@ -30,11 +30,11 @@ var RolesMap = map[string]struct{}{RoleAdmin: {}, RoleManager: {}, RoleViewer: {
 
 type Item struct {
 	ID              int        `json:"id" db:"id"`
-	Title           string     `json:"title" db:"title"`
+	Title           string     `json:"title" binding:"required" db:"title"`
 	Description     string     `json:"description,omitempty" db:"description"`
-	Price           int64      `json:"price" db:"price"` // цена в копейках
-	Visible         bool       `json:"visible" db:"visible"`
-	AvailableAmount int        `json:"available_amount" db:"available_amount"`
+	Price           int64      `json:"price" binding:"required" db:"price"` // цена в копейках
+	Visible         bool       `json:"visible" binding:"required" db:"visible"`
+	AvailableAmount int        `json:"available_amount" binding:"required" db:"available_amount"`
 	CreatedAt       time.Time  `json:"created_at" db:"created_at"`
 	UpdatedAt       time.Time  `json:"updated_at" db:"updated_at"`
 	UpdatedBy       string     `json:"-" db:"updated_by"`
@@ -80,7 +80,7 @@ type ItemHistory struct {
 }
 
 type RequestParam struct {
-	OrderBy   *string    `form:"order_by"`
+	OrderBy   *string    `form:"order_by"` // возможно есть смысл вынести orderby/asc/desc в отдельную структуру
 	ASC       bool       `form:"asc"`
 	DESC      bool       `form:"desc"`
 	StartTime *time.Time `form:"from"`

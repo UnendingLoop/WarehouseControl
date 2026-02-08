@@ -1,4 +1,4 @@
-// Package mwauthlog provides UUID-logging to every request
+// Package mwauthlog provides UUID-logging to every request + auth methods(require auth + generate token)
 package mwauthlog
 
 import (
@@ -31,8 +31,6 @@ func RequestID() gin.HandlerFunc {
 		c.Request = c.Request.WithContext(ctx)
 
 		c.Header("X-Request-ID", rid)
-		c.Set(ReqID, rid)
-
 		c.Next()
 	}
 }
@@ -86,6 +84,30 @@ func RequireAuth(secret []byte) gin.HandlerFunc {
 		c.Set("user_id", claims.UserID)
 		c.Set("role", claims.Role)
 		c.Set("username", claims.Username)
+
+		c.Next()
+	}
+}
+
+func RequireAuthTest(secret []byte) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		cookie, err := c.Request.Cookie("access_token")
+		if err != nil {
+			c.AbortWithStatus(401)
+			return
+		}
+
+		token := cookie.Value
+		if token != "jwt-token" {
+			c.AbortWithStatus(401)
+			return
+		}
+
+		// прокидываем дальше в контекст
+		c.Set("user_id", 300)
+		c.Set("role", "testRole")
+		c.Set("username", "testUserName")
+		c.Set(ReqID, "test-request-UUID")
 
 		c.Next()
 	}

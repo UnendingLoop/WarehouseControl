@@ -29,15 +29,15 @@ type WHCService interface {
 	GetItemHistoryAll(ctx context.Context, rph *model.RequestParam, role string) ([]*model.ItemHistory, error)
 }
 
-func NewEBHandlers(svc WHCService) *WHCHandlers {
+func NewWHCHandlers(svc WHCService) *WHCHandlers {
 	return &WHCHandlers{svc: svc}
 }
 
 // ---------------------------------------------------------------
 type authRequest struct {
-	UserName string `json:"username"`
-	Password string `json:"password"`
-	Role     string `json:"role"`
+	UserName string `json:"username" binding:"required"`
+	Password string `json:"password" binding:"required"`
+	Role     string `json:"role" binding:"required"`
 }
 
 type authResponse struct {

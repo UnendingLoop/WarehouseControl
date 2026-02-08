@@ -1,3 +1,4 @@
+// Package policy provides methods to check access to actions based on the provided role
 package policy
 
 import "github.com/UnendingLoop/WarehouseControl/internal/model"

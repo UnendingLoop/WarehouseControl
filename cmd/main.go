@@ -10,14 +10,13 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/UnendingLoop/WarehouseControl/internal/engine"
 	"github.com/UnendingLoop/WarehouseControl/internal/mwauthlog"
 	"github.com/UnendingLoop/WarehouseControl/internal/repository"
 	"github.com/UnendingLoop/WarehouseControl/internal/service"
 	"github.com/UnendingLoop/WarehouseControl/internal/transport"
 	"github.com/wb-go/wbf/config"
 	"github.com/wb-go/wbf/dbpg"
-
-	"github.com/wb-go/wbf/ginext"
 )
 
 func main() {
@@ -45,36 +44,9 @@ func main() {
 	// service
 	svc := service.NewWHBService(repo, jwtMngr)
 	// handlers
-	handlers := transport.NewEBHandlers(svc)
+	handlers := transport.NewWHCHandlers(svc)
 	// конфиг сервера
-	mode := appConfig.GetString("GIN_MODE")
-	engine := ginext.New(mode)
-	engine.Use(mwauthlog.RequestID()) // вставка уникального UID в каждый реквест
-	engine.GET("/ping", handlers.SimplePinger)
-	engine.Static("/ui", "./internal/web") // UI админа/юзера - функциональность и контент зависит от роли
-
-	auth := engine.Group("/auth")
-	auth.POST("/signup", handlers.SignUpUser) // регистрация пользователя
-	auth.POST("/login", handlers.LoginUser)   // авторизация
-
-	items := engine.Group("/items", mwauthlog.RequireAuth([]byte(appConfig.GetString("SECRET"))))
-	items.POST("", handlers.CreateItem)                    // создание Item
-	items.PATCH("/:id", handlers.UpdateItem)               // обновление Item по ID
-	items.GET("/:id", handlers.GetItemByID)                // получение Item по ID
-	items.GET("/:id/history", handlers.GetItemHistoryByID) // получение History товара по его ID
-	items.DELETE("/:id", handlers.DeleteItem)              // удаление Item по ID
-	items.GET("", handlers.GetItemsList)                   // получение всех Item
-
-	items.GET("/history", handlers.GetItemsHistoryList) // получение History всех товаров
-
-	items.GET("/csv", handlers.ExportItemsCSV)                     // CSV: получение всех Item
-	items.GET("/:id/history/csv", handlers.ExportItemIDHistoryCSV) // CSV: получение History товара по его ID
-	items.GET("/history/csv", handlers.ExportItemsHistory)         // CSV: получение History всех товаров
-
-	srv := &http.Server{
-		Addr:    ":" + appConfig.GetString("APP_PORT"),
-		Handler: engine,
-	}
+	srv, _ := engine.NewServerEngine(appConfig, handlers, "PROD")
 
 	// запуск сервера
 	go func() {

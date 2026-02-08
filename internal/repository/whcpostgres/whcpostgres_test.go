@@ -48,7 +48,7 @@ func TestCreateUser(t *testing.T) {
 			UserName:  "john",
 			Role:      "admin",
 			PassHash:  "hash",
-			CreatedAt: timeNow,
+			CreatedAt: &timeNow,
 		},
 	}, {
 		name:     "Negative case - some error",
@@ -111,7 +111,7 @@ func TestGetUserByName(t *testing.T) {
 				UserName:  "john",
 				Role:      "admin",
 				PassHash:  "hash",
-				CreatedAt: timeNow,
+				CreatedAt: &timeNow,
 			},
 		},
 		{

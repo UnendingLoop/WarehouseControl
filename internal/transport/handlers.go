@@ -7,7 +7,6 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"strconv"
 
 	"github.com/UnendingLoop/WarehouseControl/internal/model"
 	"github.com/gin-gonic/gin"
@@ -53,10 +52,6 @@ func (whc *WHCHandlers) LoginUser(ctx *gin.Context) {
 	if err := ctx.ShouldBindJSON(&req); err != nil {
 		ctx.JSON(http.StatusBadRequest, gin.H{"error": "invalid auth payload"})
 		return
-	}
-
-	if _, ok := model.RolesMap[req.Role]; !ok {
-		ctx.JSON(400, gin.H{"error": model.ErrIncorrectUserRole})
 	}
 
 	token, user, err := whc.svc.LoginUser(ctx.Request.Context(), req.UserName, req.Password, req.Role)
@@ -109,7 +104,7 @@ func (whc *WHCHandlers) GetItemByID(ctx *gin.Context) {
 	role := stringFromCtx(ctx, "role")
 	rawID, ok := ctx.Params.Get("id")
 	if !ok {
-		ctx.JSON(400, gin.H{"error": "empty event id"})
+		ctx.JSON(400, gin.H{"error": "empty item id"})
 		return
 	}
 	id := stringToInt(rawID)
@@ -251,7 +246,7 @@ func (whc *WHCHandlers) GetItemsHistoryList(ctx *gin.Context) {
 	ctx.JSON(http.StatusOK, res)
 }
 
-func (whc *WHCHandlers) ExportItemsHistory(ctx *gin.Context) {
+func (whc *WHCHandlers) ExportItemsHistoryCSV(ctx *gin.Context) {
 	// парсим параметры запроса из URL
 	rph := model.RequestParam{}
 	if err := decodeQueryParams(ctx, &rph); err != nil {
@@ -385,73 +380,4 @@ func (whc *WHCHandlers) ExportItemIDHistoryCSV(ctx *ginext.Context) {
 		log.Printf("failed to Flush csv-writer: %q", err.Error())
 		return
 	}
-}
-
-func convertHistoryToCSV(ctx context.Context, input []*model.ItemHistory) ([][]string, error) {
-	result := make([][]string, 0, len(input)+1)
-	start := []string{"id", "item_id", "version", "action", "changed_at", "changed_by", "old_data", "new_data"}
-	result = append(result, start)
-
-	for _, v := range input {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-			row := make([]string, 0, len(start))
-
-			oldData := ""
-			if v.OldData != nil {
-				oldData = string(*v.OldData)
-			}
-
-			row = append(row,
-				strconv.Itoa(v.ID),
-				strconv.Itoa(v.ItemID),
-				strconv.Itoa(v.Version),
-				v.Action,
-				v.ChangedAt.Format("2006-01-02 15:04:05"),
-				v.ChangedBy,
-				oldData,
-				string(v.NewData))
-			result = append(result, row)
-		}
-	}
-	return result, nil
-}
-
-func convertItemsToCSV(ctx context.Context, input []*model.Item) ([][]string, error) {
-	result := make([][]string, 0, len(input)+1)
-	start := []string{"item_id", "title", "description", "price", "visible", "available_amount", "created_at", "updated_at", "deleted_at"}
-	result = append(result, start)
-
-	for _, v := range input {
-		select {
-		case <-ctx.Done():
-			return nil, ctx.Err()
-		default:
-			row := make([]string, 0, len(start))
-			vis := "false"
-			if v.Visible {
-				vis = "true"
-			}
-
-			deletedAt := ""
-			if v.DeletedAt != nil {
-				deletedAt = v.DeletedAt.Format("2006-01-02 15:04:05")
-			}
-
-			row = append(row,
-				strconv.Itoa(v.ID),
-				v.Title,
-				v.Description,
-				strconv.Itoa(int(v.Price)),
-				vis,
-				strconv.Itoa(v.AvailableAmount),
-				v.CreatedAt.Format("2006-01-02 15:04:05"),
-				v.UpdatedAt.Format("2006-01-02 15:04:05"),
-				deletedAt)
-			result = append(result, row)
-		}
-	}
-	return result, nil
 }

@@ -388,6 +388,7 @@ func TestLoginUser(t *testing.T) {
 		password string
 		role     string
 		repo     *repoMock
+		policy   *policyMock
 		jwt      *jwtMock
 		wantErr  error
 	}{
@@ -396,6 +397,7 @@ func TestLoginUser(t *testing.T) {
 			userName: "someName",
 			password: testPass,
 			role:     "some role",
+			policy:   &policyMock{correctRole: true},
 			repo: &repoMock{GetUserByNameFn: func(ctx context.Context, username string) (*model.User, error) {
 				return &model.User{
 					ID:       1,
@@ -408,10 +410,28 @@ func TestLoginUser(t *testing.T) {
 			wantErr: nil,
 		},
 		{
+			name:     "Negative - incorrect role",
+			userName: "someName",
+			password: testPass,
+			role:     "some role",
+			policy:   &policyMock{correctRole: false},
+			repo: &repoMock{GetUserByNameFn: func(ctx context.Context, username string) (*model.User, error) {
+				return &model.User{
+					ID:       1,
+					UserName: "someName",
+					Role:     "some role",
+					PassHash: string(testHash),
+				}, nil
+			}},
+			jwt:     nil,
+			wantErr: model.ErrIncorrectUserRole,
+		},
+		{
 			name:     "Negative - incorrect password",
 			userName: "someName",
 			password: "incorrectPass",
 			role:     "some role",
+			policy:   &policyMock{correctRole: true},
 			repo: &repoMock{GetUserByNameFn: func(ctx context.Context, username string) (*model.User, error) {
 				return &model.User{
 					ID:       1,
@@ -428,6 +448,7 @@ func TestLoginUser(t *testing.T) {
 			userName: "someName",
 			password: "incorrectPass",
 			role:     "some role",
+			policy:   &policyMock{correctRole: true},
 			repo: &repoMock{GetUserByNameFn: func(ctx context.Context, username string) (*model.User, error) {
 				return nil, errors.New("test DB error")
 			}},
@@ -439,6 +460,7 @@ func TestLoginUser(t *testing.T) {
 			userName: "someName",
 			password: "incorrectPass",
 			role:     "some role",
+			policy:   &policyMock{correctRole: true},
 			repo: &repoMock{GetUserByNameFn: func(ctx context.Context, username string) (*model.User, error) {
 				return nil, model.ErrUserNotFound
 			}},
@@ -452,6 +474,7 @@ func TestLoginUser(t *testing.T) {
 			svc := WHCService{
 				repo:       tt.repo,
 				jwtManager: tt.jwt,
+				policy:     tt.policy,
 			}
 
 			token, _, err := svc.LoginUser(ctx, tt.userName, tt.password, tt.role)
