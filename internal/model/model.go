@@ -91,13 +91,15 @@ type RequestParam struct {
 
 const (
 	HistoryOrderByID      = "id"
+	HistoryOrderByItemID  = "item_id"
 	HistoryOrderByAction  = "action"
 	HistoryOrderByVersion = "version"
 	HistoryOrderByActor   = "actor"
 )
 
 var OrderByHistoryMap = map[string]struct{}{
-	HistoryOrderByID:      {},
+	HistoryOrderByID:      {}, // вместо пустой структуры можно смапить название поля в БД
+	HistoryOrderByItemID:  {},
 	HistoryOrderByAction:  {},
 	HistoryOrderByVersion: {},
 	HistoryOrderByActor:   {},
