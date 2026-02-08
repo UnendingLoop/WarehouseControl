@@ -76,7 +76,7 @@ type ItemHistory struct {
 	ChangedAt time.Time        `json:"changed_at" db:"changed_at"`
 	ChangedBy string           `json:"changed_by" db:"changed_by"`
 	OldData   *json.RawMessage `json:"old" db:"old_data"`
-	NewData   json.RawMessage  `json:"new" db:"new_data"`
+	NewData   *json.RawMessage `json:"new" db:"new_data"`
 }
 
 type RequestParam struct {

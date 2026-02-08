@@ -554,11 +554,7 @@ func TestGetItemsList(t *testing.T) {
 
 func TestGetItemHistoryByID(t *testing.T) {
 	repo, mock := newMockRepo(t)
-	jsonPtrMaker := func(input json.RawMessage) *json.RawMessage {
-		return &input
-	}
 	dbError := errors.New("DB error. Try later")
-
 	timeNow := time.Now()
 
 	cases := []struct {
@@ -583,12 +579,12 @@ func TestGetItemHistoryByID(t *testing.T) {
 				ID: 1, ItemID: 1, Version: 2, Action: "UPDATE",
 				ChangedAt: timeNow, ChangedBy: "someone",
 				OldData: jsonPtrMaker(json.RawMessage("some old data")),
-				NewData: json.RawMessage("some new data"),
+				NewData: jsonPtrMaker(json.RawMessage("some new data")),
 			}, {
 				ID: 2, ItemID: 1, Version: 3, Action: "DELETE",
 				ChangedAt: timeNow, ChangedBy: "elseone",
 				OldData: jsonPtrMaker(json.RawMessage("some old data")),
-				NewData: json.RawMessage("some new data"),
+				NewData: jsonPtrMaker(json.RawMessage("some new data")),
 			}},
 		},
 		{
@@ -636,9 +632,7 @@ func TestGetItemHistoryByID(t *testing.T) {
 
 func TestGetItemHistoryAll(t *testing.T) {
 	repo, mock := newMockRepo(t)
-	jsonPtrMaker := func(input json.RawMessage) *json.RawMessage {
-		return &input
-	}
+
 	dbError := errors.New("DB error. Try later")
 
 	timeNow := time.Now()
@@ -663,12 +657,12 @@ func TestGetItemHistoryAll(t *testing.T) {
 				ID: 1, ItemID: 1, Version: 2, Action: "UPDATE",
 				ChangedAt: timeNow, ChangedBy: "someone",
 				OldData: jsonPtrMaker(json.RawMessage("some old data")),
-				NewData: json.RawMessage("some new data"),
+				NewData: jsonPtrMaker(json.RawMessage("some new data")),
 			}, {
 				ID: 2, ItemID: 2, Version: 3, Action: "DELETE",
 				ChangedAt: timeNow, ChangedBy: "elseone",
 				OldData: jsonPtrMaker(json.RawMessage("some old data")),
-				NewData: json.RawMessage("some new data"),
+				NewData: jsonPtrMaker(json.RawMessage("some new data")),
 			}},
 		},
 		{
@@ -1024,4 +1018,8 @@ func TestUpdateQueryBuilder(t *testing.T) {
 			require.Equal(t, tt.wantString, resString)
 		})
 	}
+}
+
+func jsonPtrMaker(input json.RawMessage) *json.RawMessage {
+	return &input
 }

@@ -25,6 +25,11 @@ func convertHistoryToCSV(ctx context.Context, input []*model.ItemHistory) ([][]s
 				oldData = string(*v.OldData)
 			}
 
+			newData := ""
+			if v.NewData != nil {
+				newData = string(*v.NewData)
+			}
+
 			row = append(row,
 				strconv.Itoa(v.ID),
 				strconv.Itoa(v.ItemID),
@@ -33,7 +38,7 @@ func convertHistoryToCSV(ctx context.Context, input []*model.ItemHistory) ([][]s
 				v.ChangedAt.Format("2006-01-02 15:04:05"),
 				v.ChangedBy,
 				oldData,
-				string(v.NewData))
+				newData)
 			result = append(result, row)
 		}
 	}

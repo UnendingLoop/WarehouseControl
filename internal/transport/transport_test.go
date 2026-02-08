@@ -934,8 +934,9 @@ func generateValidItemAndHistoryArray(t *testing.T) (*model.Item, []*model.ItemH
 		DeletedAt:       nil,
 	}
 
-	testBytes, err := json.Marshal(testItem)
+	rawBytes, err := json.Marshal(testItem)
 	require.NoError(t, err, "failed to Marshal testItem into testBytes")
+	testBytes := json.RawMessage(rawBytes)
 
 	testHistory := model.ItemHistory{
 		ID:        300,
@@ -945,7 +946,7 @@ func generateValidItemAndHistoryArray(t *testing.T) (*model.Item, []*model.ItemH
 		ChangedAt: time.Now().UTC(),
 		ChangedBy: "TEST",
 		OldData:   nil,
-		NewData:   testBytes,
+		NewData:   &testBytes,
 	}
 
 	testArray := []*model.ItemHistory{}
